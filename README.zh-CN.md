@@ -39,9 +39,13 @@ Hacker News 大概是互联网上最好的技术首页 —— 但对数以百万
 
 ## 技术栈
 
-Tauri 2 + TypeScript，单仓库，`apps/<platform>`（沿用 Taskly 验证过的模式）。HackDigest 是内容型应用 —— 文章页、富文本评论树、排版 —— 而内容渲染，web 引擎就是最好的文本引擎。Tauri 让外壳保持小巧原生，其移动端目标让 Phase 3 能整体复用 `packages/core`（HN API 客户端、翻译管线、Digest 提示词）。
+**Tauri 2 + React + TypeScript**，单仓库，`apps/<platform>` + `packages/core`（沿用 Taskly 验证过的 monorepo 模式，但走 web 栈 —— HackDigest 是内容型应用：文章页、富文本评论树、排版，而内容渲染，web 引擎就是最好的文本引擎）。
 
-HN 数据直接来自官方 [Hacker News API](https://github.com/HackerNews/API) 与 Algolia 搜索 API —— 不爬虫，免费版不需要任何后端。
+- `packages/core` —— 纯 TypeScript，全端复用：HN API 客户端（官方 Firebase API + Algolia 搜索）、翻译管线、Digest 提示词，以及任意 OpenAI 兼容端点的 BYOK 预置（GLM、DeepSeek、通义、Kimi、OpenAI、Claude……），国内用户可直连国产 API。
+- 前端 —— React + Vite + TanStack Query（信息流缓存与分页）+ 虚拟化评论树（@tanstack/virtual），Tailwind 负责阅读排版，深浅色。
+- 存储 —— 单 SQLite 文件（`tauri-plugin-sql`）：收藏、历史、翻译缓存 —— 同一帖子的翻译绝不重复计费。
+- 网络 —— LLM 调用走 Rust 侧（绕开 webview CORS）；HN 数据直接来自官方 [Hacker News API](https://github.com/HackerNews/API) 与 Algolia 搜索 API —— 不爬虫，免费版不需要任何后端。
+- 更新 —— Tauri updater 对接 GitHub Releases，桌面端不过任何应用商店的审核。
 
 ## 仓库结构
 

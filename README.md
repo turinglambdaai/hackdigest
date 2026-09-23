@@ -55,16 +55,26 @@ translation with no setup, no keys, no quotas.
 
 ## Tech stack
 
-Tauri 2 + TypeScript, one repo, `apps/<platform>` (the pattern Taskly
-settled on). HackDigest is a content app — story pages, rich comment trees,
-typeset text — and for content, the web rendering engine is the best text
-engine available. Tauri keeps the shell small and native-feeling, and
-Tauri's mobile targets let Phase 3 reuse the entire `packages/core`
-(HN API client, translation pipeline, digest prompting).
+**Tauri 2 + React + TypeScript**, one repo, `apps/<platform>` + `packages/core`
+(the pattern Taskly settled on, with a web stack — HackDigest is a content
+app: story pages, rich comment trees, typeset text, and for content the web
+rendering engine is the best text engine available).
 
-HN data comes straight from the official
-[Hacker News API](https://github.com/HackerNews/API) and the Algolia search
-API — no scraping, no backend required for the free app.
+- `packages/core` — pure TypeScript, runs everywhere: HN API client (official
+  Firebase API + Algolia search), translation pipeline, digest prompting, and
+  BYOK presets for any OpenAI-compatible endpoint (GLM, DeepSeek, Qwen, Kimi,
+  OpenAI, Claude …) so mainland users can plug in a domestically reachable API.
+- Frontend — React + Vite + TanStack Query (feed caching & pagination) +
+  virtualized comment trees (@tanstack/virtual), Tailwind for reading
+  typography, light/dark.
+- Storage — one SQLite file (`tauri-plugin-sql`): bookmarks, history, and a
+  translation cache — a translated thread is never billed twice.
+- Network — LLM calls go through the Rust side (no webview CORS); HN data
+  comes straight from the official
+  [Hacker News API](https://github.com/HackerNews/API) and Algolia search —
+  no scraping, no backend required for the free app.
+- Updates — Tauri updater against GitHub Releases; no app-store gatekeeper
+  on desktop.
 
 ## Repo layout
 
