@@ -3,8 +3,8 @@ node_modules/
 dist/
 *.local
 
-# Tauri / Rust
-src-tauri/target/
+# Tauri / Rust (unanchored: matches at any depth)
+target/
 
 # IDE
 .vscode/
