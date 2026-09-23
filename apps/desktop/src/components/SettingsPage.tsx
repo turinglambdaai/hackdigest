@@ -13,7 +13,7 @@ import { useSettings, useTrans } from '../state/store';
 import { openExternal } from '../lib/hooks';
 import { checkForUpdate, relaunchApp } from '../lib/updater';
 
-const APP_VERSION = '0.1.2';
+const APP_VERSION = '0.1.3';
 const REPO_URL = 'https://github.com/turinglambdaai/hackdigest';
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {

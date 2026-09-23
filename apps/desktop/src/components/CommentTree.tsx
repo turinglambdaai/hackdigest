@@ -3,6 +3,7 @@ import { sanitizeHtml, timeAgo, translateComments, type HNItem } from '@hackdige
 import { useI18n } from '../i18n';
 import { useSettings, useTrans, useUI } from '../state/store';
 import { IconTranslate, IconChevronDown } from './icons';
+import { toast } from './Toast';
 
 export function buildTree(comments: HNItem[]): Map<number, HNItem[]> {
   const byParent = new Map<number, HNItem[]>();
@@ -40,7 +41,7 @@ export function CommentNode({ item, children, tree }: NodeProps) {
   })(children);
 
   const translateOne = async () => {
-    if (!llm) return navigate({ type: 'settings' });
+    if (!llm) { toast.info(t.noKeyTitle + ' — ' + t.goSettings); navigate({ type: 'settings' }); return; }
     if (busy) return;
     setBusy(true);
     try {

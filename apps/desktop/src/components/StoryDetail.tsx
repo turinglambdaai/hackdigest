@@ -101,7 +101,7 @@ export default function StoryDetail({ id }: { id: number }) {
   const tree = useMemo(() => buildTree(comments), [comments]);
   const roots = story ? (tree.get(story.id) ?? []) : [];
 
-  const requireLLM = () => llm ?? (navigate({ type: 'settings' }), null);
+  const requireLLM = () => { if (llm) return llm; toast.info(t.noKeyTitle + ' — ' + t.goSettings); navigate({ type: 'settings' }); return null; };
 
   const translateStoryNow = async () => {
     const cfg = requireLLM();
