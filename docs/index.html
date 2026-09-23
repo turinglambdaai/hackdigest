@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HackDigest — 把 Hacker News 读成中文</title>
+    <meta name="description" content="给非英语开发者的 Hacker News 阅读器：内置翻译与三层 AI 摘要（文章 TL;DR / 评论区观点提炼 / 每日晨报）。自带 API Key 全功能免费，桌面全平台。">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,500&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <nav class="nav">
+        <div class="nav-inner">
+            <a class="brand" href="#">
+                <span class="brand-mark">H</span>
+                <span class="brand-name">HackDigest</span>
+            </a>
+            <div class="nav-links">
+                <a href="#digests" data-i18n="nav_digests">三层 Digest</a>
+                <a href="#pricing" data-i18n="nav_pricing">免费与 Pro</a>
+                <a href="#download" data-i18n="nav_download">下载</a>
+                <button class="lang-toggle" id="langToggle">EN</button>
+            </div>
+        </div>
+    </nav>
+
+    <header class="hero">
+        <div class="hero-copy">
+            <h1>Hacker News, <em>in your language.</em></h1>
+            <p class="hero-sub" data-i18n="hero_sub">把全球最好的技术首页读成中文 —— 每条新闻、每篇原文、每个评论楼，按需翻译、按需摘要。</p>
+            <div class="hero-cta">
+                <a class="btn btn-primary" href="https://github.com/turinglambdaai/hackdigest/releases/latest"
+                    target="_blank" rel="noopener" data-i18n="hero_download">免费下载桌面版</a>
+                <a class="btn btn-ghost" href="https://github.com/turinglambdaai/hackdigest" target="_blank"
+                    rel="noopener">GitHub ↗</a>
+            </div>
+            <p class="hero-note" data-i18n="hero_note">Windows · macOS · Linux 全平台免费，AGPL 开源，自动更新。</p>
+        </div>
+        <div class="hero-mock" aria-hidden="true">
+            <div class="mock-window">
+                <div class="mock-titlebar"><i></i><i></i><i></i><span>HackDigest</span></div>
+                <div class="mock-body">
+                    <div class="mock-sidebar">
+                        <div class="mock-side-item active" data-i18n="feed_top">热门</div>
+                        <div class="mock-side-item" data-i18n="feed_new">最新</div>
+                        <div class="mock-side-item" data-i18n="feed_ask">Ask HN</div>
+                        <div class="mock-side-item" data-i18n="feed_daily">今日晨报</div>
+                    </div>
+                    <div class="mock-main">
+                        <div class="mock-row">
+                            <span class="mock-rank">1.</span>
+                            <div>
+                                <div class="mock-title-zh">为什么我们放弃了微服务</div>
+                                <div class="mock-meta">1823 分 · 647 条评论 · 9 小时前</div>
+                            </div>
+                        </div>
+                        <div class="mock-comment">
+                            <div class="mock-comment-meta">@simonw · ▾</div>
+                            <div class="mock-comment-en">The migration took us 18 months and honestly…</div>
+                            <div class="mock-comment-zh">这次迁移花了我们 18 个月，说实话……</div>
+                        </div>
+                        <div class="mock-digest">
+                            <div class="mock-digest-badge">✦ AI 评论摘要</div>
+                            <div class="mock-digest-line"></div>
+                            <div class="mock-digest-line short"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <section class="section" id="digests">
+        <div class="section-header">
+            <h2 data-i18n="digests_title">三层 Digest，把英文墙拆掉</h2>
+            <p data-i18n="digests_desc">翻译只是地基。HackDigest 用 AI 把 HN 最难啃的部分变成两分钟中文阅读。</p>
+        </div>
+        <div class="digest-grid">
+            <div class="digest-card">
+                <div class="digest-icon">📄</div>
+                <h3 data-i18n="d1_title">文章 TL;DR</h3>
+                <p data-i18n="d1_desc">HN 链接的原文动辄五千词英文。一键压缩成几段中文摘要，先知道值不值得读，再决定要不要读。</p>
+            </div>
+            <div class="digest-card featured">
+                <div class="digest-icon">💬</div>
+                <h3 data-i18n="d2_title">评论区观点提炼</h3>
+                <p data-i18n="d2_desc">HN 的精华在评论区。八百条英文回复，提炼成正反双方核心论点、值得一看的发言、以及社区的最终倾向。</p>
+            </div>
+            <div class="digest-card">
+                <div class="digest-icon">☕</div>
+                <h3 data-i18n="d3_title">每日晨报</h3>
+                <p data-i18n="d3_desc">今早的首页变成两分钟中文晨读：按主题分组、每条一句话为什么值得看，喝口咖啡决定今天深读哪几篇。</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="section section-alt" id="pricing">
+        <div class="section-header">
+            <h2 data-i18n="pricing_title">免费，是真的免费</h2>
+            <p data-i18n="pricing_desc">全平台客户端免费下载。翻译与摘要自带 API Key —— 真无限、零配额、永久免费。</p>
+        </div>
+        <div class="pricing-grid">
+            <div class="pricing-card">
+                <h3 data-i18n="free_title">Free + 自带 Key</h3>
+                <div class="price" data-i18n="free_price">¥0</div>
+                <ul>
+                    <li data-i18n="f1">HN 全部信息流与评论楼</li>
+                    <li data-i18n="f2">翻译与三层 Digest（自带 Key 无限用）</li>
+                    <li data-i18n="f3">收藏、已读历史、深色模式</li>
+                    <li data-i18n="f4">GLM / DeepSeek / 通义 / Kimi / Ollama 直连</li>
+                </ul>
+                <a class="btn btn-primary" href="#download" data-i18n="cta_download">立即下载</a>
+            </div>
+            <div class="pricing-card pro">
+                <div class="pro-badge" data-i18n="pro_badge">Phase 2 即将推出</div>
+                <h3>Pro</h3>
+                <div class="price" data-i18n="pro_price">订阅 / 买断</div>
+                <ul>
+                    <li data-i18n="p1">托管翻译，免配置免 Key 开箱即用</li>
+                    <li data-i18n="p2">每日晨报自动送达</li>
+                    <li data-i18n="p3">跨设备同步（桌面 + 手机，一份授权）</li>
+                    <li data-i18n="p4">合理使用内无限 · 全局共享缓存</li>
+                </ul>
+                <a class="btn btn-ghost disabled" href="#" onclick="return false" data-i18n="cta_wait">敬请期待</a>
+            </div>
+        </div>
+    </section>
+
+    <section class="section" id="download">
+        <div class="section-header">
+            <h2 data-i18n="dl_title">下载</h2>
+            <p data-i18n="dl_desc">所有安装包由 GitHub CI 从源码构建，内置自动更新 —— 一次安装，以后版本自动升级。</p>
+        </div>
+        <div class="dl-grid">
+            <a class="dl-card" href="https://github.com/turinglambdaai/hackdigest/releases/latest">
+                <div class="dl-os">Windows</div>
+                <div class="dl-hint" data-i18n="dl_win">Windows 10/11 · MSI / EXE</div>
+            </a>
+            <a class="dl-card" href="https://github.com/turinglambdaai/hackdigest/releases/latest">
+                <div class="dl-os">macOS</div>
+                <div class="dl-hint" data-i18n="dl_mac">Apple Silicon · DMG</div>
+            </a>
+            <a class="dl-card" href="https://github.com/turinglambdaai/hackdigest/releases/latest">
+                <div class="dl-os">Linux</div>
+                <div class="dl-hint" data-i18n="dl_linux">DEB / RPM / AppImage</div>
+            </a>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <p>AGPL-3.0 · 数据来自 <a href="https://github.com/HackerNews/API" target="_blank"
+                rel="noopener">Hacker News 官方 API</a></p>
+        <p><a href="https://github.com/turinglambdaai/hackdigest" target="_blank" rel="noopener">GitHub</a> · <a
+                href="https://jrtx.site" target="_blank" rel="noopener">jrtx.site</a></p>
+    </footer>
+
+    <script>
+        const I18N = {
+            en: {
+                nav_digests: 'Three digests', nav_pricing: 'Free & Pro', nav_download: 'Download',
+                hero_sub: 'The best tech front page on the internet — every story, article, and comment thread, translated and digested into your language on demand.',
+                hero_download: 'Download desktop — free', hero_note: 'Windows · macOS · Linux, free on every platform. AGPL open source, auto-updating.',
+                digests_title: 'Three digests tear the English wall down',
+                digests_desc: 'Translation is just the foundation. HackDigest turns the hardest parts of HN into two-minute reads.',
+                d1_title: 'Article TL;DR', d1_desc: 'HN links to 5,000-word essays. Compress each into a few paragraphs in your language — know if it is worth reading before you read it.',
+                d2_title: 'Thread digest', d2_desc: 'The gold of HN is the comments. 800 replies become the top arguments on each side, standout comments, and where the community landed.',
+                d3_title: 'Daily digest', d3_desc: 'This morning\'s front page as a two-minute read: grouped by theme, one line on why each story matters.',
+                pricing_title: 'Free means free',
+                pricing_desc: 'Free download on every platform. Bring your own API key — truly unlimited, no quota, forever.',
+                free_title: 'Free + your own key', free_price: '¥0',
+                f1: 'All HN feeds and comment threads', f2: 'Translation and all three digests (unlimited with your key)',
+                f3: 'Bookmarks, read history, dark mode', f4: 'GLM / DeepSeek / Qwen / Kimi / Ollama direct',
+                pro_badge: 'Coming in Phase 2', pro_price: 'Subscription / one-time',
+                p1: 'Hosted translation — no setup, no key', p2: 'Daily digest, delivered',
+                p3: 'Cross-device sync (desktop + mobile, one license)', p4: 'Fair-use unlimited · shared caches',
+                cta_download: 'Download now', cta_wait: 'Coming soon',
+                dl_title: 'Download', dl_desc: 'Every installer is built from source by GitHub CI, with auto-update built in — install once, upgrade forever.',
+                dl_win: 'Windows 10/11 · MSI / EXE', dl_mac: 'Apple Silicon · DMG', dl_linux: 'DEB / RPM / AppImage',
+                feed_top: 'Top', feed_new: 'New', feed_ask: 'Ask HN', feed_daily: 'Daily digest',
+            }
+        };
+        const ZH = {}; // default markup is zh; capture on load
+        document.querySelectorAll('[data-i18n]').forEach(el => { ZH[el.dataset.i18n] = el.innerHTML; });
+        let lang = 'zh';
+        const toggle = document.getElementById('langToggle');
+        toggle.addEventListener('click', () => {
+            lang = lang === 'zh' ? 'en' : 'zh';
+            toggle.textContent = lang === 'zh' ? 'EN' : '中文';
+            document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                el.innerHTML = lang === 'zh' ? ZH[el.dataset.i18n] : (I18N.en[el.dataset.i18n] ?? ZH[el.dataset.i18n]);
+            });
+        });
+    </script>
+</body>
+
+</html>
