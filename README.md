@@ -5,12 +5,32 @@ English comfortably enough to enjoy HN raw.
 
 **English** · [中文](README.zh-CN.md)
 
-[![License](https://img.shields.io/badge/license-AGPL--3.0-blue)](LICENSE) [![Platforms](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux%20%7C%20mobile%20(Phase%203)-lightgrey)](#roadmap)
+[![License](https://img.shields.io/badge/license-AGPL--3.0-blue)](LICENSE) [![CI](https://github.com/turinglambdaai/hackdigest/actions/workflows/ci.yml/badge.svg)](https://github.com/turinglambdaai/hackdigest/actions/workflows/ci.yml)
 
 Hacker News is arguably the best tech front page on the internet — and for
 hundreds of millions of developers, a wall of English. HackDigest tears that
 wall down: every story, article TL;DR, and comment thread, translated and
 digested on demand.
+
+## Download
+
+Grab the latest release for your platform from
+[GitHub Releases](https://github.com/turinglambdaai/hackdigest/releases):
+
+| Platform | Artifact |
+|---|---|
+| Windows 10/11 | `.msi` installer (unsigned in early builds — see below) |
+| macOS (Apple Silicon) | `.dmg` |
+| Linux | `.deb` / `.AppImage` |
+
+> Windows SmartScreen may warn on unsigned builds. The builds are produced by
+> this repository's CI from tagged commits; a code-signing certificate is on
+> the Phase 2 list.
+>
+> macOS: right-click → Open on first launch (unnotarized in early builds).
+
+Translation and digests need an LLM API key — set one in Settings (GLM,
+DeepSeek, Qwen, Kimi, OpenAI, or a local Ollama; all OpenAI-compatible).
 
 ## The three digests
 
@@ -32,11 +52,17 @@ metered on the free tier and unlimited on Pro.
 | Browse HN (Top / New / Best / Ask / Show / Jobs) | ✅ | ✅ |
 | Reader-optimized comment threads, dark mode | ✅ | ✅ |
 | Bookmarks & local history | ✅ | ✅ |
-| Translate story + thread (per story) | daily quota | unlimited |
-| Article TL;DR & thread digest | daily quota | unlimited |
+| Translate story + thread (per story) | daily quota | fair-use unlimited† |
+| Article TL;DR & thread digest | daily quota | fair-use unlimited† |
 | Daily digest of the front page | — | ✅ |
 | Cross-device sync (desktop + mobile, one license) | — | ✅ |
-| Bring your own LLM API key | ✅ unlimited | ✅ |
+| Bring your own LLM API key | ✅ truly unlimited | ✅ truly unlimited |
+
+† The Pro *hosted* service uses generous daily quotas plus globally shared
+translation caches (HN traffic concentrates on a few hundred stories, so
+cached threads cost nothing to serve). This keeps a flat subscription
+sustainable without rate-limiting anyone who reads like a human. Bring your
+own key and nothing here applies — that path is free and unlimited, forever.
 
 Bring your own key and everything is free, forever — that's the open-source
 half of the deal. Pro is for people who just want it to work: hosted

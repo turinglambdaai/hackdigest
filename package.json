@@ -1,0 +1,12 @@
+{
+  "name": "hackdigest",
+  "private": true,
+  "version": "0.1.0",
+  "packageManager": "pnpm@11.3.0",
+  "scripts": {
+    "dev": "pnpm --filter @hackdigest/desktop dev",
+    "build": "pnpm --filter @hackdigest/desktop build:vite",
+    "check": "pnpm --filter @hackdigest/desktop check",
+    "tauri": "pnpm --filter @hackdigest/desktop tauri"
+  }
+}

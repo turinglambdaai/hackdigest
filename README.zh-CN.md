@@ -4,9 +4,25 @@
 
 [English](README.md) · **中文**
 
-[![License](https://img.shields.io/badge/license-AGPL--3.0-blue)](LICENSE) [![Platforms](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux%20%7C%20mobile%20(Phase%203)-lightgrey)](#roadmap)
+[![License](https://img.shields.io/badge/license-AGPL--3.0-blue)](LICENSE) [![CI](https://github.com/turinglambdaai/hackdigest/actions/workflows/ci.yml/badge.svg)](https://github.com/turinglambdaai/hackdigest/actions/workflows/ci.yml)
 
 Hacker News 大概是互联网上最好的技术首页 —— 但对数以百万计的开发者来说，它也是一堵英文墙。HackDigest 拆掉这堵墙：每一条新闻、每一篇原文、每一个评论楼，按需翻译、按需总结。
+
+## 下载
+
+从 [GitHub Releases](https://github.com/turinglambdaai/hackdigest/releases) 获取最新版本：
+
+| 平台 | 产物 |
+|---|---|
+| Windows 10/11 | `.msi` 安装包（早期版本未签名，见下） |
+| macOS（Apple Silicon） | `.dmg` |
+| Linux | `.deb` / `.AppImage` |
+
+> Windows SmartScreen 可能对未签名构建告警。所有构建由本仓库 CI 从打 tag 的提交产出；代码签名证书在 Phase 2 计划内。
+>
+> macOS 首次启动：右键 → 打开（早期版本未公证）。
+
+翻译与 Digest 需要一个大模型 API Key —— 在设置里填一个（GLM、DeepSeek、通义、Kimi、OpenAI，或本地 Ollama，均为 OpenAI 兼容接口）。
 
 ## 三层 Digest
 
@@ -23,13 +39,15 @@ Hacker News 大概是互联网上最好的技术首页 —— 但对数以百万
 | 浏览 HN（Top / New / Best / Ask / Show / Jobs） | ✅ | ✅ |
 | 阅读优化的评论楼、深色模式 | ✅ | ✅ |
 | 收藏与本地历史 | ✅ | ✅ |
-| 翻译新闻 + 评论区（按帖子计） | 每日限额 | 无限 |
-| 文章 TL;DR 与评论区 Digest | 每日限额 | 无限 |
+| 翻译新闻 + 评论区（按帖子计） | 每日限额 | 合理使用内无限† |
+| 文章 TL;DR 与评论区 Digest | 每日限额 | 合理使用内无限† |
 | 首页每日 Digest | — | ✅ |
 | 跨设备同步（桌面 + 手机，一份授权） | — | ✅ |
-| 自带 LLM API Key（BYOK） | ✅ 无限 | ✅ |
+| 自带 LLM API Key（BYOK） | ✅ 真无限 | ✅ 真无限 |
 
-自带 Key 全功能免费用到天荒地老 —— 这是开源的那一半约定。Pro 是给「只想开箱即用」的人：免配置、免 Key、无限额的托管翻译。
+† Pro 的**托管**服务采用宽松的每日额度 + 全局共享翻译缓存（HN 流量高度集中在几百个帖子上，缓存命中的帖子服务成本为零）。这让一个平价订阅可以持续经营，同时不会真正限制任何「像人一样阅读」的用户。自带 Key 的路径与此无关 —— 那条路永久免费、真无限。
+
+自带 Key 全功能免费用到天荒地老 —— 这是开源的那一半约定。Pro 是给「只想开箱即用」的人：免配置、免 Key 的托管翻译。
 
 ## Roadmap
 
