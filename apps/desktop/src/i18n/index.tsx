@@ -70,6 +70,11 @@ const zh = {
   bookmarkRemoved: '取消收藏',
   proComingSoon: 'Pro（托管翻译服务）将在 Phase 2 推出',
   dailyIntro: '把今天 HN 首页变成两分钟中文晨读。',
+  updateAvailable: '发现新版本',
+  updateNow: '立即更新',
+  updateFailed: '更新失败，请手动下载',
+  checkUpdate: '检查更新',
+  upToDate: '已是最新版本',
 };
 
 const en: typeof zh = {
@@ -139,6 +144,11 @@ const en: typeof zh = {
   bookmarkRemoved: 'Remove bookmark',
   proComingSoon: 'Pro (hosted translation) arrives in Phase 2',
   dailyIntro: 'Today\'s HN front page as a two-minute read.',
+  updateAvailable: 'Update available',
+  updateNow: 'Update now',
+  updateFailed: 'Update failed — please download manually',
+  checkUpdate: 'Check for updates',
+  upToDate: 'You are up to date',
 };
 
 const dicts = { zh, en };

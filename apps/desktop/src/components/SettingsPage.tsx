@@ -11,8 +11,9 @@ import {
 import { useI18n } from '../i18n';
 import { useSettings, useTrans } from '../state/store';
 import { openExternal } from '../lib/hooks';
+import { checkForUpdate, relaunchApp } from '../lib/updater';
 
-const APP_VERSION = '0.1.0';
+const APP_VERSION = '0.1.1';
 const REPO_URL = 'https://github.com/turinglambdaai/hackdigest';
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -44,6 +45,7 @@ export default function SettingsPage() {
   const [testState, setTestState] = useState<'idle' | 'running' | 'ok' | 'fail'>('idle');
   const [testMsg, setTestMsg] = useState('');
   const [cacheCleared, setCacheCleared] = useState(false);
+  const [updateState, setUpdateState] = useState<'idle' | 'checking' | 'none' | 'downloading' | 'error'>('idle');
 
   const provider = PROVIDERS.find((p) => p.id === settings.providerId);
   const llm = settings.llm ?? { baseUrl: '', apiKey: '', model: '' };
@@ -182,6 +184,31 @@ export default function SettingsPage() {
         <Row label={t.version}>
           <span className="text-sm text-mute">v{APP_VERSION}</span>
         </Row>
+        <div className="mb-3 flex items-center gap-3">
+          <button
+            className="rounded-lg bg-accent px-3 py-1.5 text-xs font-medium text-white hover:opacity-90 disabled:opacity-50"
+            disabled={updateState === 'checking' || updateState === 'downloading'}
+            onClick={async () => {
+              setUpdateState('checking');
+              try {
+                const update = await checkForUpdate();
+                if (!update) {
+                  setUpdateState('none');
+                  return;
+                }
+                setUpdateState('downloading');
+                await update.downloadAndInstall();
+                await relaunchApp();
+              } catch {
+                setUpdateState('error');
+              }
+            }}
+          >
+            {updateState === 'downloading' ? t.updateNow : t.checkUpdate}
+          </button>
+          {updateState === 'none' && <span className="text-xs text-green-600 dark:text-green-400">{t.upToDate}</span>}
+          {updateState === 'error' && <span className="text-xs text-red-600 dark:text-red-400">{t.updateFailed}</span>}
+        </div>
         <Row label="GitHub">
           <button className="text-sm text-accent underline" onClick={() => void openExternal(REPO_URL)}>
             {t.viewRepo}

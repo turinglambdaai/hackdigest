@@ -32,6 +32,10 @@ Grab the latest release for your platform from
 Translation and digests need an LLM API key — set one in Settings (GLM,
 DeepSeek, Qwen, Kimi, OpenAI, or a local Ollama; all OpenAI-compatible).
 
+**Auto-update is built in** (since v0.1.1): the app checks GitHub Releases on
+startup and offers a one-click, signature-verified update — no re-downloading
+installers by hand.
+
 ## The three digests
 
 1. **Story digest** — the linked article (often 5,000 words of English)

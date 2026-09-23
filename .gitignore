@@ -17,3 +17,6 @@ Thumbs.db
 # Env / keys
 .env
 .env.*
+
+# Updater signing keys — NEVER commit (backup outside the repo!)
+updater-keys/

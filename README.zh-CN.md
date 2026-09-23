@@ -24,6 +24,8 @@ Hacker News 大概是互联网上最好的技术首页 —— 但对数以百万
 
 翻译与 Digest 需要一个大模型 API Key —— 在设置里填一个（GLM、DeepSeek、通义、Kimi、OpenAI，或本地 Ollama，均为 OpenAI 兼容接口）。
 
+**内置自动更新**（v0.1.1 起）：应用启动时检查 GitHub Releases，发现新版本横幅提示、一键完成签名校验与更新 —— 无需再手动下载安装包。
+
 ## 三层 Digest
 
 1. **文章 Digest** —— HN 链接的原文动辄五千词英文，压缩成几段中文摘要。

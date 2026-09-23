@@ -1,6 +1,6 @@
 [package]
 name = "hackdigest"
-version = "0.1.0"
+version = "0.1.1"
 description = "Hacker News, in your language"
 authors = ["jrtxio"]
 edition = "2021"
@@ -18,6 +18,8 @@ serde = "1"
 serde_json = "1"
 tauri-plugin-http = "~2.6.0"
 tauri-plugin-opener = "2"
+tauri-plugin-updater = "~2.12.0"
+tauri-plugin-process = "~2.3.0"
 
 [profile.release]
 codegen-units = 1
