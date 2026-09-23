@@ -55,6 +55,24 @@ export interface ChatOptions {
 }
 
 export async function chat(cfg: LLMConfig, msgs: ChatMsg[], opts: ChatOptions = {}): Promise<string> {
+  try {
+    return await chatOnce(cfg, msgs, opts, true);
+  } catch (e) {
+    // Some OpenAI-compatible endpoints reject response_format with 400/422.
+    // The prompts already demand JSON-only output, so retry without it.
+    if (opts.jsonMode && e instanceof LLMError && (e.status === 400 || e.status === 422)) {
+      return await chatOnce(cfg, msgs, opts, false);
+    }
+    throw e;
+  }
+}
+
+async function chatOnce(
+  cfg: LLMConfig,
+  msgs: ChatMsg[],
+  opts: ChatOptions,
+  withJsonFormat: boolean
+): Promise<string> {
   const f = await smartFetch();
   const url = `${cfg.baseUrl.replace(/\/+$/, '')}/chat/completions`;
   const body: Record<string, unknown> = {
@@ -63,7 +81,7 @@ export async function chat(cfg: LLMConfig, msgs: ChatMsg[], opts: ChatOptions = 
     temperature: opts.temperature ?? 0.3,
   };
   if (opts.maxTokens) body.max_tokens = opts.maxTokens;
-  if (opts.jsonMode) body.response_format = { type: 'json_object' };
+  if (opts.jsonMode && withJsonFormat) body.response_format = { type: 'json_object' };
   if (opts.onDelta) body.stream = true;
 
   const res = await f(url, {

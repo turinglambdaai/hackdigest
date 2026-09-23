@@ -116,11 +116,19 @@ export async function translateComments(
   onBatch?: (results: Map<number, string>, progress: CommentBatchResult) => void,
   signal?: AbortSignal
 ): Promise<void> {
+  // Warm the cache in parallel chunks (serial per-item reads crawl on 1000+ threads).
   const pending: HNItem[] = [];
-  for (const c of comments) {
-    const cached = await getCachedTranslation(c.id, lang);
-    if (cached?.text) onBatch?.(new Map([[c.id, cached.text]]), { done: 0, total: comments.length });
-    else pending.push(c);
+  const CHUNK = 100;
+  for (let i = 0; i < comments.length; i += CHUNK) {
+    if (signal?.aborted) return;
+    const slice = comments.slice(i, i + CHUNK);
+    const cached = await Promise.all(
+      slice.map(async (c) => ({ c, t: await getCachedTranslation(c.id, lang) }))
+    );
+    for (const { c, t } of cached) {
+      if (t?.text) onBatch?.(new Map([[c.id, t.text]]), { done: 0, total: comments.length });
+      else pending.push(c);
+    }
   }
   const BATCH = 40;
   let done = comments.length - pending.length;

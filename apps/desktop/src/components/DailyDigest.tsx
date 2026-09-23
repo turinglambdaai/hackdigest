@@ -14,6 +14,7 @@ import {
 import { useI18n } from '../i18n';
 import { useSettings, useUI } from '../state/store';
 import { IconSpark } from './icons';
+import { toast } from './Toast';
 
 export default function DailyDigest() {
   const { t } = useI18n();
@@ -55,7 +56,7 @@ export default function DailyDigest() {
     try {
       await digestDaily(llm, stories, target, todayKey(), (d) => setContent((prev) => prev + d));
     } catch (e) {
-      alert(String(e instanceof Error ? e.message : e));
+      toast.error(e instanceof Error ? e.message : String(e));
       setContent(null);
     } finally {
       setRunning(false);

@@ -19,6 +19,7 @@ import { useSettings, useTrans, useUI } from '../state/store';
 import { openExternal } from '../lib/hooks';
 import { isBookmarked, toggleBookmark, markRead } from '../lib/bookmarks';
 import { CommentNode, buildTree } from './CommentTree';
+import { toast } from './Toast';
 import { IconChevronLeft, IconExternal, IconStar, IconTranslate, IconSpark } from './icons';
 
 export default function StoryDetail({ id }: { id: number }) {
@@ -110,7 +111,7 @@ export default function StoryDetail({ id }: { id: number }) {
       const r = await translateStory(cfg, story, target);
       put(id, r);
     } catch (e) {
-      alert(String(e instanceof Error ? e.message : e));
+      toast.error(e instanceof Error ? e.message : String(e));
     } finally {
       setTranslating(false);
     }
@@ -135,7 +136,7 @@ export default function StoryDetail({ id }: { id: number }) {
         ac.signal
       );
     } catch (e) {
-      if (!ac.signal.aborted) alert(String(e instanceof Error ? e.message : e));
+      if (!ac.signal.aborted) toast.error(e instanceof Error ? e.message : String(e));
     } finally {
       setTranslating(false);
       setProgress(null);
@@ -152,7 +153,7 @@ export default function StoryDetail({ id }: { id: number }) {
     try {
       await digestThread(cfg, story, comments, target, (d) => setDigest((prev) => prev + d), ac.signal);
     } catch (e) {
-      if (!ac.signal.aborted) alert(String(e instanceof Error ? e.message : e));
+      if (!ac.signal.aborted) toast.error(e instanceof Error ? e.message : String(e));
       setDigest(null);
     } finally {
       setDigesting(false);

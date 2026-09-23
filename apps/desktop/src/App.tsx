@@ -8,6 +8,7 @@ import BookmarksPage from './components/BookmarksPage';
 import DailyDigest from './components/DailyDigest';
 import SettingsPage from './components/SettingsPage';
 import UpdateBanner, { useStartupUpdateCheck } from './components/UpdateBanner';
+import ToastHost from './components/Toast';
 
 export default function App() {
   const view = useUI((s) => s.view);
@@ -49,6 +50,7 @@ export default function App() {
           {view.type === 'settings' && <SettingsPage />}
         </main>
       </div>
+      <ToastHost />
     </div>
   );
 }

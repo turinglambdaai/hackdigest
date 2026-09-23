@@ -60,7 +60,27 @@ jobs:
           projectPath: apps/desktop
           tagName: ${{ github.ref_name }}
           releaseName: 'HackDigest ${{ github.ref_name }}'
-          releaseBody: 'Hacker News, in your language. See the assets below to download for your platform.'
+          releaseBody: |
+            HackDigest v${{ github.ref_name }} —— Hacker News 中文阅读器。
+          
+            ## 新版变化
+          
+            - 兼容更多 OpenAI 兼容端点（不支持 JSON 模型的服务商自动降级）
+            - 大帖评论翻译提速（缓存并发读取）
+            - 错误提示改为非阻塞通知
+          
+            ## 下载
+          
+            | 平台 | 文件 |
+            |---|---|
+            | Windows 10/11 | `HackDigest_..._x64-setup.exe`（推荐）或 `.msi` |
+            | macOS Apple Silicon | `.dmg` |
+            | Linux | `.deb` / `.rpm` / `.AppImage` |
+          
+            > Windows 首次运行可能弹出 SmartScreen 提示：点「更多信息」→「仍要运行」。构建由 GitHub CI 从源码产出。
+            > macOS 首次启动：右键 → 打开。
+          
+            首次使用请在「设置 → AI 与翻译」填一个大模型 API Key（智谱 GLM / DeepSeek / 通义 / Kimi / OpenAI / 本地 Ollama 均可，自带 Key 全功能免费）。
           releaseDraft: false
           prerelease: false
           includeUpdaterJson: true
