@@ -76,12 +76,12 @@ translation with no setup, no keys, no quotas.
 
 ## Roadmap
 
-- **Phase 1 — Desktop MVP** (Windows first, then macOS): HN feeds and
-  threads with a reading experience worth opening daily; translation and
-  digests via BYOK (bring your own key). Free & open source throughout.
-- **Phase 2 — Hosted service + Pro**: managed translation behind a
-  subscription or one-time lifetime license; daily digest; one account
-  across devices.
+- **Phase 1 — Desktop MVP** ✅ (v0.1.x): HN feeds and threads with a reading
+  experience worth opening daily; translation and digests via BYOK; auto-update.
+- **Phase 2 — Hosted Pro service** (v0.2.0): managed translation behind a
+  license key — no setup, no keys. 7-day free trial per device, generous daily
+  quotas, globally shared caches. Soft launch; sales start manual (lifetime /
+  yearly keys), payment gateway lands next.
 - **Phase 3 — Mobile** (iOS / Android): the same TypeScript core, a phone
   app, Pro licenses carry over.
 

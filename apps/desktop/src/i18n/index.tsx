@@ -75,6 +75,17 @@ const zh = {
   updateFailed: '更新失败，请手动下载',
   checkUpdate: '检查更新',
   upToDate: '已是最新版本',
+  licenseKey: 'License Key',
+  hostedActivate: '激活',
+  hostedTrial: '免费试用 7 天',
+  hostedActive: '已激活，托管服务可用',
+  hostedPlan: '当前方案',
+  hostedPlanTrial: '试用',
+  hostedPlanPro: 'Pro 订阅',
+  hostedPlanLifetime: '终身买断',
+  hostedExpires: '到期',
+  hostedUsage: '今日用量',
+  hostedQuotaNote: '（缓存命中的翻译不消耗额度）',
 };
 
 const en: typeof zh = {
@@ -149,6 +160,17 @@ const en: typeof zh = {
   updateFailed: 'Update failed — please download manually',
   checkUpdate: 'Check for updates',
   upToDate: 'You are up to date',
+  licenseKey: 'License key',
+  hostedActivate: 'Activate',
+  hostedTrial: 'Free 7-day trial',
+  hostedActive: 'Activated — hosted service ready',
+  hostedPlan: 'Plan',
+  hostedPlanTrial: 'Trial',
+  hostedPlanPro: 'Pro subscription',
+  hostedPlanLifetime: 'Lifetime',
+  hostedExpires: 'expires',
+  hostedUsage: 'Usage today',
+  hostedQuotaNote: '(cache hits are free)',
 };
 
 const dicts = { zh, en };

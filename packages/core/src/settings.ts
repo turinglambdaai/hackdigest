@@ -1,6 +1,7 @@
 // App settings persisted in IndexedDB ('meta' store).
 
 import type { LLMConfig } from './llm';
+import type { HostedStatus } from './hosted';
 import { kvGet, kvSet } from './store';
 
 export interface Settings {
@@ -10,6 +11,7 @@ export interface Settings {
   fontScale: number; // 0.9 / 1.0 / 1.1 / 1.25
   llm: LLMConfig | null;
   providerId: string; // preset id, '' when unset
+  hostedStatus: HostedStatus | null; // cached activation/quota state
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -19,6 +21,7 @@ export const DEFAULT_SETTINGS: Settings = {
   fontScale: 1.0,
   llm: null,
   providerId: '',
+  hostedStatus: null,
 };
 
 export async function loadSettings(): Promise<Settings> {

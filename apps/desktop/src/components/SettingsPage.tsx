@@ -1,19 +1,23 @@
 // Settings: appearance, BYOK provider, translation target, cache, about.
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   PROVIDERS,
   TRANSLATE_TARGETS,
   langName,
   testLLM,
+  activateLicense,
+  startTrial,
+  fetchQuota,
   type LLMConfig,
+  type HostedStatus,
 } from '@hackdigest/core';
 import { useI18n } from '../i18n';
 import { useSettings, useTrans } from '../state/store';
 import { openExternal } from '../lib/hooks';
 import { checkForUpdate, relaunchApp } from '../lib/updater';
 
-const APP_VERSION = '0.1.3';
+const APP_VERSION = '0.2.0';
 const REPO_URL = 'https://github.com/turinglambdaai/hackdigest';
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -46,11 +50,57 @@ export default function SettingsPage() {
   const [testMsg, setTestMsg] = useState('');
   const [cacheCleared, setCacheCleared] = useState(false);
   const [updateState, setUpdateState] = useState<'idle' | 'checking' | 'none' | 'downloading' | 'error'>('idle');
+  const [hostedBusy, setHostedBusy] = useState(false);
+  const [hostedMsg, setHostedMsg] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
 
   const provider = PROVIDERS.find((p) => p.id === settings.providerId);
   const llm = settings.llm ?? { baseUrl: '', apiKey: '', model: '' };
 
   const setLLM = (p: Partial<LLMConfig>) => patch({ llm: { ...llm, ...p } });
+
+  const hostedPlanName = (plan: HostedStatus['plan']) =>
+    plan === 'trial' ? t.hostedPlanTrial : plan === 'lifetime' ? t.hostedPlanLifetime : t.hostedPlanPro;
+
+  const applyHostedStatus = (s: HostedStatus) => patch({ hostedStatus: s });
+
+  const runHostedActivate = async () => {
+    if (!llm.apiKey || hostedBusy) return;
+    setHostedBusy(true);
+    setHostedMsg(null);
+    try {
+      applyHostedStatus(await activateLicense(llm.apiKey));
+      setHostedMsg({ kind: 'ok', text: t.hostedActive });
+    } catch (e) {
+      setHostedMsg({ kind: 'error', text: e instanceof Error ? e.message : String(e) });
+    } finally {
+      setHostedBusy(false);
+    }
+  };
+
+  const runHostedTrial = async () => {
+    if (hostedBusy) return;
+    setHostedBusy(true);
+    setHostedMsg(null);
+    try {
+      const r = await startTrial();
+      setLLM({ apiKey: r.key });
+      applyHostedStatus(r);
+      setHostedMsg({ kind: 'ok', text: t.hostedActive });
+    } catch (e) {
+      setHostedMsg({ kind: 'error', text: e instanceof Error ? e.message : String(e) });
+    } finally {
+      setHostedBusy(false);
+    }
+  };
+
+  // Refresh hosted quota whenever the settings page opens with a key set.
+  useEffect(() => {
+    if (settings.providerId !== 'hosted' || !llm.apiKey) return;
+    fetchQuota(llm.apiKey)
+      .then(applyHostedStatus)
+      .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [settings.providerId, llm.apiKey]);
 
   const pickProvider = (id: string) => {
     const preset = PROVIDERS.find((p) => p.id === id);
@@ -129,7 +179,63 @@ export default function SettingsPage() {
             </button>
           </p>
         )}
-        {settings.providerId && (
+        {settings.providerId === 'hosted' && (
+          <>
+            <Row label={t.licenseKey}>
+              <input
+                type="password"
+                className={inputCls}
+                value={llm.apiKey}
+                onChange={(e) => setLLM({ apiKey: e.target.value.trim() })}
+                placeholder="hd_pro_… / hd_trial_…"
+                autoComplete="off"
+              />
+            </Row>
+            <div className="mb-3 flex flex-wrap items-center gap-3">
+              <button
+                className="rounded-lg bg-accent px-3 py-1.5 text-xs font-medium text-white hover:opacity-90 disabled:opacity-50"
+                onClick={runHostedActivate}
+                disabled={!llm.apiKey || hostedBusy}
+              >
+                {t.hostedActivate}
+              </button>
+              <button
+                className="rounded-lg border border-line px-3 py-1.5 text-xs font-medium hover:bg-raised disabled:opacity-50"
+                onClick={runHostedTrial}
+                disabled={hostedBusy}
+              >
+                {t.hostedTrial}
+              </button>
+              {hostedMsg && <span className={`text-xs ${hostedMsg.kind === 'error' ? 'text-red-600 dark:text-red-400' : 'text-mute'}`}>{hostedMsg.text}</span>}
+            </div>
+            {settings.hostedStatus && (
+              <div className="mb-3 rounded-lg border border-accent/30 bg-accentsoft p-3 text-xs">
+                <div className="font-medium text-accent">
+                  {t.hostedPlan}: {hostedPlanName(settings.hostedStatus.plan)}
+                  {settings.hostedStatus.expiresAt && (
+                    <span className="ml-2 text-mute">
+                      {t.hostedExpires} {new Date(settings.hostedStatus.expiresAt * 1000).toLocaleDateString()}
+                    </span>
+                  )}
+                </div>
+                <div className="mt-1 text-ink/80">
+                  {t.hostedUsage}: {settings.hostedStatus.used}/{settings.hostedStatus.limit}
+                  <span className="ml-2 text-mute">{t.hostedQuotaNote}</span>
+                </div>
+              </div>
+            )}
+            <Row label={t.targetLang}>
+              <select className={inputCls} value={settings.translateTarget} onChange={(e) => patch({ translateTarget: e.target.value })}>
+                {TRANSLATE_TARGETS.map((l) => (
+                  <option key={l} value={l}>
+                    {langName(l)}
+                  </option>
+                ))}
+              </select>
+            </Row>
+          </>
+        )}
+        {settings.providerId && settings.providerId !== 'hosted' && (
           <>
             <Row label={t.baseUrl}>
               <input className={inputCls} value={llm.baseUrl} onChange={(e) => setLLM({ baseUrl: e.target.value.trim() })} placeholder="https://…/v1" />
