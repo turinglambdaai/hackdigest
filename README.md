@@ -7,6 +7,8 @@ English comfortably enough to enjoy HN raw.
 
 [![License](https://img.shields.io/badge/license-AGPL--3.0-blue)](LICENSE) [![CI](https://github.com/turinglambdaai/hackdigest/actions/workflows/ci.yml/badge.svg)](https://github.com/turinglambdaai/hackdigest/actions/workflows/ci.yml)
 
+🏠 Product page: **https://hackdigest.jrtx.site**
+
 Hacker News is arguably the best tech front page on the internet — and for
 hundreds of millions of developers, a wall of English. HackDigest tears that
 wall down: every story, article TL;DR, and comment thread, translated and
