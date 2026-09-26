@@ -23,7 +23,7 @@ export async function getCachedTranslation(id: number, lang: string): Promise<Tr
   return hit ?? null;
 }
 
-function extractJson(raw: string): Record<string, unknown> {
+export function extractJson(raw: string): Record<string, unknown> {
   // Models sometimes wrap JSON in ```json fences or prose; find the object.
   const m = raw.match(/\{[\s\S]*\}/);
   if (!m) throw new Error('no JSON in model output');
