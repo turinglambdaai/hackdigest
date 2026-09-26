@@ -36,22 +36,18 @@ Hacker News 大概是互联网上最好的技术首页 —— 但对数以百万
 
 ## 免费 / Pro
 
-全平台客户端免费下载。翻译与 Digest 功能免费层限量、Pro 无限。
+全平台客户端免费下载。所有功能都可以自带 LLM Key 永久免费解锁（BYOK 真免费）；Pro 托管服务是给「只想开箱即用」的人 —— 免 Key、免配置。
 
-| | 免费 | Pro |
+| | 免费（BYOK） | Pro（托管） |
 |---|---|---|
-| 浏览 HN（Top / New / Best / Ask / Show / Jobs） | ✅ | ✅ |
-| 阅读优化的评论楼、深色模式 | ✅ | ✅ |
-| 收藏与本地历史 | ✅ | ✅ |
-| 翻译新闻 + 评论区（按帖子计） | 每日限额 | 合理使用内无限† |
-| 文章 TL;DR 与评论区 Digest | 每日限额 | 合理使用内无限† |
-| 首页每日 Digest | — | ✅ |
-| 跨设备同步（桌面 + 手机，一份授权） | — | ✅ |
-| 自带 LLM API Key（BYOK） | ✅ 真无限 | ✅ 真无限 |
+| 浏览 HN、阅读优化的评论楼、收藏、深色模式 | ✅ | ✅ |
+| 翻译新闻与评论楼 | ✅ 无限 | ✅ 免配置 |
+| 文章 TL;DR、评论摘要、每日晨报 | ✅ 无限 | ✅ 免配置 |
+| 自带 LLM API Key | ✅ GLM / DeepSeek / 通义 / Kimi / Ollama…… | — 无需 |
+| 托管服务（免 Key，合理使用日额度†） | 每设备 7 天免费试用 | ✅ 合理使用内无限† |
+| 跨设备同步（一份授权，桌面 + 手机） | — | 规划中（Phase 3） |
 
 † Pro 的**托管**服务采用宽松的每日额度 + 全局共享翻译缓存（HN 流量高度集中在几百个帖子上，缓存命中的帖子服务成本为零）。这让一个平价订阅可以持续经营，同时不会真正限制任何「像人一样阅读」的用户。自带 Key 的路径与此无关 —— 那条路永久免费、真无限。
-
-自带 Key 全功能免费用到天荒地老 —— 这是开源的那一半约定。Pro 是给「只想开箱即用」的人：免配置、免 Key 的托管翻译。
 
 ## Roadmap
 
@@ -64,10 +60,10 @@ Hacker News 大概是互联网上最好的技术首页 —— 但对数以百万
 **Tauri 2 + React + TypeScript**，单仓库，`apps/<platform>` + `packages/core`（沿用 Taskly 验证过的 monorepo 模式，但走 web 栈 —— HackDigest 是内容型应用：文章页、富文本评论树、排版，而内容渲染，web 引擎就是最好的文本引擎）。
 
 - `packages/core` —— 纯 TypeScript，全端复用：HN API 客户端（官方 Firebase API + Algolia 搜索）、翻译管线、Digest 提示词，以及任意 OpenAI 兼容端点的 BYOK 预置（GLM、DeepSeek、通义、Kimi、OpenAI、Claude……），国内用户可直连国产 API。
-- 前端 —— React + Vite + TanStack Query（信息流缓存与分页）+ 虚拟化评论树（@tanstack/virtual），Tailwind 负责阅读排版，深浅色。
-- 存储 —— 单 SQLite 文件（`tauri-plugin-sql`）：收藏、历史、翻译缓存 —— 同一帖子的翻译绝不重复计费。
-- 网络 —— LLM 调用走 Rust 侧（绕开 webview CORS）；HN 数据直接来自官方 [Hacker News API](https://github.com/HackerNews/API) 与 Algolia 搜索 API —— 不爬虫，免费版不需要任何后端。
-- 更新 —— Tauri updater 对接 GitHub Releases，桌面端不过任何应用商店的审核。
+- 前端 —— React + Vite + zustand + Tailwind 4，渐进加载的评论树与信息流，深浅色。
+- 存储 —— IndexedDB（webview 自带，零插件）：收藏、历史、翻译缓存 —— 同一帖子的翻译绝不重复计费。
+- 网络 —— LLM 调用在 Tauri 环境走插件网络层（绕开 webview CORS）；HN 数据直接来自官方 [Hacker News API](https://github.com/HackerNews/API) 与 Algolia 搜索 API —— 不爬虫，BYOK 模式不需要任何后端。
+- 更新 —— Tauri updater 对接 GitHub Releases（minisign 签名），桌面端不过任何应用商店的审核。
 
 ## 仓库结构
 

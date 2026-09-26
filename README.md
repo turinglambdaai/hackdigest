@@ -50,29 +50,24 @@ installers by hand.
 
 ## Free / Pro
 
-The app is free to download on every platform. Translation and digests are
-metered on the free tier and unlimited on Pro.
+The app is free to download on every platform. Everything can be unlocked
+forever with your own LLM key (BYOK, truly free); the Pro hosted service is
+for people who just want it to work — no keys, no setup.
 
-| | Free | Pro |
+| | Free (BYOK) | Pro (hosted) |
 |---|---|---|
-| Browse HN (Top / New / Best / Ask / Show / Jobs) | ✅ | ✅ |
-| Reader-optimized comment threads, dark mode | ✅ | ✅ |
-| Bookmarks & local history | ✅ | ✅ |
-| Translate story + thread (per story) | daily quota | fair-use unlimited† |
-| Article TL;DR & thread digest | daily quota | fair-use unlimited† |
-| Daily digest of the front page | — | ✅ |
-| Cross-device sync (desktop + mobile, one license) | — | ✅ |
-| Bring your own LLM API key | ✅ truly unlimited | ✅ truly unlimited |
+| Browse HN, reader-optimized threads, bookmarks, dark mode | ✅ | ✅ |
+| Translate stories & comment threads | ✅ unlimited | ✅ no setup |
+| Article TL;DR, thread digest, daily digest | ✅ unlimited | ✅ no setup |
+| Bring your own LLM API key | ✅ GLM / DeepSeek / Qwen / Kimi / Ollama … | — not needed |
+| Hosted service (no key, fair-use daily quota†) | 7-day free trial per device | ✅ fair-use unlimited† |
+| Cross-device sync (one license, desktop + mobile) | — | Planned (Phase 3) |
 
 † The Pro *hosted* service uses generous daily quotas plus globally shared
 translation caches (HN traffic concentrates on a few hundred stories, so
 cached threads cost nothing to serve). This keeps a flat subscription
 sustainable without rate-limiting anyone who reads like a human. Bring your
 own key and nothing here applies — that path is free and unlimited, forever.
-
-Bring your own key and everything is free, forever — that's the open-source
-half of the deal. Pro is for people who just want it to work: hosted
-translation with no setup, no keys, no quotas.
 
 ## Roadmap
 
@@ -96,17 +91,16 @@ rendering engine is the best text engine available).
   Firebase API + Algolia search), translation pipeline, digest prompting, and
   BYOK presets for any OpenAI-compatible endpoint (GLM, DeepSeek, Qwen, Kimi,
   OpenAI, Claude …) so mainland users can plug in a domestically reachable API.
-- Frontend — React + Vite + TanStack Query (feed caching & pagination) +
-  virtualized comment trees (@tanstack/virtual), Tailwind for reading
-  typography, light/dark.
-- Storage — one SQLite file (`tauri-plugin-sql`): bookmarks, history, and a
-  translation cache — a translated thread is never billed twice.
-- Network — LLM calls go through the Rust side (no webview CORS); HN data
-  comes straight from the official
+- Frontend — React + Vite + zustand + Tailwind 4; progressively-loaded
+  feeds and comment trees, light/dark.
+- Storage — IndexedDB (built into the webview, zero plugins): bookmarks,
+  history, and a translation cache — a translated thread is never billed twice.
+- Network — LLM calls ride the Tauri plugin HTTP layer (no webview CORS); HN
+  data comes straight from the official
   [Hacker News API](https://github.com/HackerNews/API) and Algolia search —
-  no scraping, no backend required for the free app.
-- Updates — Tauri updater against GitHub Releases; no app-store gatekeeper
-  on desktop.
+  no scraping, no backend required for BYOK.
+- Updates — Tauri updater against GitHub Releases (minisign-signed); no
+  app-store gatekeeper on desktop.
 
 ## Repo layout
 
