@@ -20,6 +20,9 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
+      - name: Unit tests (core)
+        run: pnpm test
+
       - name: Type-check
         run: pnpm check
 
