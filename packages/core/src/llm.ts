@@ -60,11 +60,29 @@ export async function chat(cfg: LLMConfig, msgs: ChatMsg[], opts: ChatOptions = 
   } catch (e) {
     // Some OpenAI-compatible endpoints reject response_format with 400/422.
     // The prompts already demand JSON-only output, so retry without it.
-    if (opts.jsonMode && e instanceof LLMError && (e.status === 400 || e.status === 422)) {
+    if (e instanceof LLMError && (e.status === 400 || e.status === 422) && opts.jsonMode) {
       return await chatOnce(cfg, msgs, opts, false);
+    }
+    // Rate-limited (common on free tiers): one patient retry.
+    if (e instanceof LLMError && e.status === 429) {
+      await new Promise((r) => setTimeout(r, 3000));
+      return await chatOnce(cfg, msgs, opts, true);
+    }
+    // Timeout (our 60s guard) — user cancels pass through untouched.
+    if (e instanceof Error && /timed? ?out|abort/i.test(e.message) && !opts.signal?.aborted) {
+      throw new LLMError('请求超时（60 秒）—— 模型无响应，可尝试换一个模型或服务商');
     }
     throw e;
   }
+}
+
+/** Combined abort: the caller's signal OR a 60s request timeout. */
+function withTimeout(signal: AbortSignal | undefined, ms = 60000): { signal: AbortSignal; cancel: () => void } {
+  const ac = new AbortController();
+  const timer = setTimeout(() => ac.abort(new Error('request timed out')), ms);
+  const onAbort = () => ac.abort(signal?.reason);
+  signal?.addEventListener('abort', onAbort, { once: true });
+  return { signal: ac.signal, cancel: () => (clearTimeout(timer), signal?.removeEventListener('abort', onAbort)) };
 }
 
 async function chatOnce(
@@ -84,15 +102,21 @@ async function chatOnce(
   if (opts.jsonMode && withJsonFormat) body.response_format = { type: 'json_object' };
   if (opts.onDelta) body.stream = true;
 
-  const res = await f(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${cfg.apiKey}`,
-    },
-    body: JSON.stringify(body),
-    signal: opts.signal,
-  });
+  const { signal, cancel } = withTimeout(opts.signal);
+  let res: Response;
+  try {
+    res = await f(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${cfg.apiKey}`,
+      },
+      body: JSON.stringify(body),
+      signal,
+    });
+  } finally {
+    cancel();
+  }
 
   if (!res.ok) {
     let detail = '';

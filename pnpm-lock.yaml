@@ -72,6 +72,9 @@ importers:
 
   packages/core:
     dependencies:
+      '@tauri-apps/api':
+        specifier: ^2.11.1
+        version: 2.11.1
       '@tauri-apps/plugin-http':
         specifier: ^2
         version: 2.6.1
