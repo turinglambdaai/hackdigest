@@ -131,22 +131,29 @@ export async function translateComments(
     }
   }
   const BATCH = 40;
+  const CONCURRENCY = 2; // batches in flight — ~2x faster without hammering rate limits
   let done = comments.length - pending.length;
-  for (let i = 0; i < pending.length; i += BATCH) {
-    if (signal?.aborted) return;
-    const slice = pending.slice(i, i + BATCH);
-    try {
-      const map = await translateBatch(cfg, slice, lang, signal);
-      for (const [id, text] of map) {
-        await kvSet('trans', cacheKey(id, lang), { text, model: cfg.model, lang });
+  let cursor = 0;
+  let firstError: unknown = null;
+  const worker = async () => {
+    while (cursor < pending.length && !signal?.aborted && !firstError) {
+      const i = cursor++;
+      const slice = pending.slice(i, i + BATCH);
+      try {
+        const map = await translateBatch(cfg, slice, lang, signal);
+        for (const [id, text] of map) {
+          await kvSet('trans', cacheKey(id, lang), { text, model: cfg.model, lang });
+        }
+        done += slice.length;
+        onBatch?.(map, { done, total: comments.length });
+      } catch (e) {
+        if (!signal?.aborted && firstError == null) firstError = e;
+        return;
       }
-      done += slice.length;
-      onBatch?.(map, { done, total: comments.length });
-    } catch (e) {
-      if (signal?.aborted) return;
-      throw e;
     }
-  }
+  };
+  await Promise.all(Array.from({ length: Math.min(CONCURRENCY, Math.ceil(pending.length / BATCH)) }, worker));
+  if (firstError) throw firstError;
 }
 
 function systemPrompt(lang: string): string {

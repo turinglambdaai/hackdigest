@@ -67,6 +67,20 @@ export const useTrans = create<TransState>((set) => ({
   clear: () => set({ map: {} }),
 }));
 
+// Which comment nodes the user has collapsed (tree-wide, so translation can
+// skip folded subtrees).
+interface TreeState {
+  collapsed: Record<number, boolean>;
+  toggleCollapse: (id: number) => void;
+  resetCollapsed: () => void;
+}
+
+export const useTree = create<TreeState>((set) => ({
+  collapsed: {},
+  toggleCollapse: (id) => set((s) => ({ collapsed: { ...s.collapsed, [id]: !s.collapsed[id] } })),
+  resetCollapsed: () => set({ collapsed: {} }),
+}));
+
 /** Theme handling: apply .dark class + font scale to <html>. */
 export function applyChrome(settings: Settings) {
   const root = document.documentElement;

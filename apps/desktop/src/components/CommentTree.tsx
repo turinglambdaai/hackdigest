@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { sanitizeHtml, timeAgo, translateComments, type HNItem } from '@hackdigest/core';
 import { useI18n } from '../i18n';
-import { useSettings, useTrans, useUI } from '../state/store';
+import { useSettings, useTrans, useTree, useUI } from '../state/store';
 import { IconTranslate, IconChevronDown } from './icons';
 import { toast } from './Toast';
 
@@ -14,6 +14,20 @@ export function buildTree(comments: HNItem[]): Map<number, HNItem[]> {
     else byParent.set(c.parent, [c]);
   }
   return byParent;
+}
+
+/** Comments visible under the current collapse state (folded subtrees skipped). */
+export function collectVisible(
+  roots: HNItem[],
+  tree: Map<number, HNItem[]>,
+  collapsed: Record<number, boolean>,
+  out: HNItem[] = []
+): HNItem[] {
+  for (const n of roots) {
+    out.push(n);
+    if (!collapsed[n.id]) collectVisible(tree.get(n.id) ?? [], tree, collapsed, out);
+  }
+  return out;
 }
 
 interface NodeProps {
@@ -29,7 +43,8 @@ export function CommentNode({ item, children, tree }: NodeProps) {
   const trans = useTrans((s) => s.map[item.id]);
   const put = useTrans((s) => s.put);
   const navigate = useUI((s) => s.navigate);
-  const [collapsed, setCollapsed] = useState(false);
+  const collapsed = useTree((s) => !!s.collapsed[item.id]);
+  const toggleCollapse = useTree((s) => s.toggleCollapse);
   const [busy, setBusy] = useState(false);
   const [showOriginal, setShowOriginal] = useState(false);
 
@@ -58,11 +73,11 @@ export function CommentNode({ item, children, tree }: NodeProps) {
   const bodyHtml = trans?.text ? trans.text : item.text ?? '';
 
   return (
-    <div className="pt-2">
+    <div className="group/node pt-2">
       <div className="flex items-center gap-2 text-xs text-mute">
         <button
           className="flex items-center gap-1 rounded px-1 py-0.5 hover:bg-raised"
-          onClick={() => setCollapsed((c) => !c)}
+          onClick={() => toggleCollapse(item.id)}
         >
           {collapsed ? (
             <IconChevronDown width={12} height={12} className="rotate-[-90deg]" />
@@ -78,11 +93,15 @@ export function CommentNode({ item, children, tree }: NodeProps) {
           </span>
         )}
         <button
-          title={t.translate}
-          className={`ml-auto rounded p-1 hover:bg-raised ${trans?.text ? 'text-accent' : 'text-mute'}`}
+          title={t.translateOneComment}
+          className={`ml-auto rounded-md p-1.5 transition-opacity hover:bg-raised ${
+            trans?.text || busy
+              ? 'text-accent opacity-100'
+              : 'text-mute opacity-50 group-hover/node:opacity-100'
+          }`}
           onClick={translateOne}
         >
-          <IconTranslate className={busy ? 'animate-pulse' : ''} width={12} height={12} />
+          <IconTranslate className={busy ? 'animate-pulse' : ''} width={13} height={13} />
         </button>
       </div>
 

@@ -15,10 +15,10 @@ import {
   type HNItem,
 } from '@hackdigest/core';
 import { useI18n } from '../i18n';
-import { useSettings, useTrans, useUI } from '../state/store';
+import { useSettings, useTrans, useUI, useTree } from '../state/store';
 import { openExternal } from '../lib/hooks';
 import { isBookmarked, toggleBookmark, markRead } from '../lib/bookmarks';
-import { CommentNode, buildTree } from './CommentTree';
+import { CommentNode, buildTree, collectVisible } from './CommentTree';
 import { toast } from './Toast';
 import { isTypingTarget } from '../lib/keys';
 import { IconChevronLeft, IconExternal, IconStar, IconTranslate, IconSpark } from './icons';
@@ -139,17 +139,23 @@ export default function StoryDetail({ id }: { id: number }) {
     }
   };
 
+  const visibleComments = useMemo(
+    () => collectVisible(roots, tree, useTree.getState().collapsed),
+    [roots, tree]
+  );
+
   const translateAllComments = async () => {
     const cfg = requireLLM();
-    if (!cfg || translating || comments.length === 0) return;
+    const visible = collectVisible(roots, tree, useTree.getState().collapsed);
+    if (!cfg || translating || visible.length === 0) return;
     const ac = new AbortController();
     abortRef.current = ac;
     setTranslating(true);
-    setProgress({ done: 0, total: comments.length });
+    setProgress({ done: 0, total: visible.length });
     try {
       await translateComments(
         cfg,
-        comments,
+        visible,
         target,
         (batch, p) => {
           for (const [cid, text] of batch) put(cid, { text });
@@ -246,17 +252,18 @@ export default function StoryDetail({ id }: { id: number }) {
             disabled={translating}
           >
             <IconTranslate className={translating ? 'animate-pulse' : ''} width={13} height={13} />
-            {t.translate}
+            {t.translateStoryBtn}
           </button>
           {comments.length > 0 && (
             <button
+              title={t.translateVisibleHint}
               className="flex items-center gap-1.5 rounded-lg border border-line bg-surface px-3 py-1.5 text-xs font-medium hover:bg-raised"
               onClick={translateAllComments}
               disabled={translating}
             >
               <IconTranslate className={translating ? 'animate-pulse' : ''} width={13} height={13} />
               {t.translateAll}
-              {progress ? ` (${progress.done}/${progress.total})` : ` (${comments.length})`}
+              {progress ? ` (${progress.done}/${progress.total})` : ` (${visibleComments.length})`}
             </button>
           )}
           {comments.length > 0 && (
