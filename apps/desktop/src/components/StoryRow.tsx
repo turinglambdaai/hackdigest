@@ -7,12 +7,14 @@ import { IconStar, IconTranslate } from './icons';
 interface Props {
   item: HNItem;
   rank?: number;
+  idx?: number;
+  selected?: boolean;
   read?: boolean;
   bookmarked?: boolean;
   onToggleBookmark?: (id: number) => void;
 }
 
-export default function StoryRow({ item, rank, read, bookmarked, onToggleBookmark }: Props) {
+export default function StoryRow({ item, rank, idx, selected, read, bookmarked, onToggleBookmark }: Props) {
   const { t, lang } = useI18n();
   const navigate = useUI((s) => s.navigate);
   const llm = useSettings((s) => s.settings.llm);
@@ -41,7 +43,8 @@ export default function StoryRow({ item, rank, read, bookmarked, onToggleBookmar
 
   return (
     <div
-      className="group cursor-pointer border-b border-line/60 px-5 py-3 transition-colors hover:bg-raised/60"
+      data-rank={idx}
+      className={`group cursor-pointer border-b border-line/60 px-5 py-3 transition-colors hover:bg-raised/60 ${selected ? 'bg-accentsoft/60 shadow-[inset_3px_0_0_0_var(--accent)]' : ''}`}
       onClick={() => navigate({ type: 'story', id: item.id })}
     >
       <div className="flex items-start gap-3">

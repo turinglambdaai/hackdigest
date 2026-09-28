@@ -9,14 +9,40 @@ import DailyDigest from './components/DailyDigest';
 import SettingsPage from './components/SettingsPage';
 import UpdateBanner, { useStartupUpdateCheck } from './components/UpdateBanner';
 import ToastHost from './components/Toast';
+import ShortcutsOverlay from './components/ShortcutsOverlay';
+import { isTypingTarget } from './lib/keys';
+
+const FEED_KEYS: Array<'top' | 'new' | 'best' | 'ask' | 'show' | 'job'> = ['top', 'new', 'best', 'ask', 'show', 'job'];
 
 export default function App() {
   const view = useUI((s) => s.view);
+  const navigate = useUI((s) => s.navigate);
   const settings = useSettings((s) => s.settings);
   const loaded = useSettings((s) => s.loaded);
   const init = useSettings((s) => s.init);
   const update = useStartupUpdateCheck();
   const [bannerDismissed, setBannerDismissed] = useState(false);
+  const [showShortcuts, setShowShortcuts] = useState(false);
+
+  // Global keys: 1-6 switch feeds, / focuses search, ? shows the cheat sheet.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (isTypingTarget(e) || e.metaKey || e.ctrlKey || e.altKey) return;
+      if (e.key === '?') {
+        setShowShortcuts((v) => !v);
+      } else if (e.key === '/') {
+        e.preventDefault();
+        document.getElementById('global-search')?.focus();
+      } else if (e.key === 'Escape') {
+        setShowShortcuts(false);
+        (document.activeElement as HTMLElement | null)?.blur?.();
+      } else if (/^[1-6]$/.test(e.key)) {
+        navigate({ type: 'feed', feed: FEED_KEYS[Number(e.key) - 1] });
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [navigate]);
 
   useEffect(() => {
     void init();
@@ -50,6 +76,7 @@ export default function App() {
           {view.type === 'settings' && <SettingsPage />}
         </main>
       </div>
+      {showShortcuts && <ShortcutsOverlay onClose={() => setShowShortcuts(false)} />}
       <ToastHost />
     </div>
   );

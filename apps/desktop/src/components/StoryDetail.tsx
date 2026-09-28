@@ -20,6 +20,7 @@ import { openExternal } from '../lib/hooks';
 import { isBookmarked, toggleBookmark, markRead } from '../lib/bookmarks';
 import { CommentNode, buildTree } from './CommentTree';
 import { toast } from './Toast';
+import { isTypingTarget } from '../lib/keys';
 import { IconChevronLeft, IconExternal, IconStar, IconTranslate, IconSpark } from './icons';
 
 export default function StoryDetail({ id }: { id: number }) {
@@ -99,6 +100,25 @@ export default function StoryDetail({ id }: { id: number }) {
       if (flushTimer != null) clearTimeout(flushTimer);
     };
   }, [story?.id, story?.kids]);
+
+
+  // Keyboard: <-/u back, t translate story, Shift+T translate all, d digest.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (isTypingTarget(e) || e.metaKey || e.ctrlKey || e.altKey) return;
+      if (e.key === 'ArrowLeft' || e.key.toLowerCase() === 'u') {
+        back();
+      } else if (e.key.toLowerCase() === 't' && !e.shiftKey) {
+        void translateStoryNow();
+      } else if (e.key.toLowerCase() === 't' && e.shiftKey) {
+        void translateAllComments();
+      } else if (e.key.toLowerCase() === 'd') {
+        void runDigest();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  });
 
   const tree = useMemo(() => buildTree(comments), [comments]);
   const roots = story ? (tree.get(story.id) ?? []) : [];

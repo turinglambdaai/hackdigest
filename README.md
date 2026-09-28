@@ -38,6 +38,14 @@ DeepSeek, Qwen, Kimi, OpenAI, or a local Ollama; all OpenAI-compatible).
 startup and offers a one-click, signature-verified update — no re-downloading
 installers by hand.
 
+## Keyboard-first
+
+HN veterans get their muscle memory back: **j/k** move the selection,
+**Enter/o** open, **s** bookmark, **t** translate the selected title,
+**r** refresh, **1–6** switch feeds, **/** search. On a story page:
+**←/u** back, **t** translate, **Shift+T** translate all comments,
+**d** AI digest. Press **?** anytime for the cheat sheet.
+
 ## The three digests
 
 1. **Story digest** — the linked article (often 5,000 words of English)

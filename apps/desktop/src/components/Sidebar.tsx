@@ -47,6 +47,7 @@ export default function Sidebar() {
         <div className="flex items-center gap-2 rounded-lg bg-raised px-2.5 py-1.5 text-sm text-mute focus-within:ring-1 focus-within:ring-accent/50">
           <IconSearch className="shrink-0" width={14} height={14} />
           <input
+            id="global-search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder={t.searchPlaceholder}

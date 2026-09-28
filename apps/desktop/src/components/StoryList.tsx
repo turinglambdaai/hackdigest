@@ -3,7 +3,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { fetchFeedIds, fetchItems, type FeedId, type HNItem } from '@hackdigest/core';
 import { useI18n } from '../i18n';
+import { useUI } from '../state/store';
 import { useSentinel } from '../lib/hooks';
+import { isTypingTarget } from '../lib/keys';
+import { translateStory } from '@hackdigest/core';
+import { useSettings, useTrans } from '../state/store';
 import { listBookmarks, listReadIds, toggleBookmark, type BookmarkEntry } from '../lib/bookmarks';
 import StoryRow from './StoryRow';
 import { IconRefresh } from './icons';
@@ -19,6 +23,11 @@ export default function StoryList({ feed }: { feed: FeedId }) {
   const [readIds, setReadIds] = useState<Set<number>>(new Set());
   const [bookmarks, setBookmarks] = useState<Set<number>>(new Set());
   const [tick, setTick] = useState(0);
+  const [sel, setSel] = useState(0);
+  const llm = useSettings((st) => st.settings.llm);
+  const target = useSettings((st) => st.settings.translateTarget);
+  const put = useTrans((st) => st.put);
+  const navigate = useUI((st) => st.navigate);
 
   useEffect(() => {
     let alive = true;
@@ -47,6 +56,38 @@ export default function StoryList({ feed }: { feed: FeedId }) {
       alive = false;
     };
   }, [ids, visible]);
+
+
+  // HN-style keyboard navigation: j/k move, Enter/o open, s star, t translate, r refresh.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (isTypingTarget(e) || e.metaKey || e.ctrlKey || e.altKey) return;
+      const k = e.key.toLowerCase();
+      if (k === 'j' || e.key === 'ArrowDown') {
+        setSel((i) => Math.min(i + 1, items.length - 1));
+        e.preventDefault();
+      } else if (k === 'k' || e.key === 'ArrowUp') {
+        setSel((i) => Math.max(i - 1, 0));
+        e.preventDefault();
+      } else if (e.key === 'Enter' || k === 'o') {
+        const it = items[sel];
+        if (it) navigate({ type: 'story', id: it.id });
+      } else if (k === 's') {
+        const it = items[sel];
+        if (it) void toggleBookmark(it.id);
+      } else if (k === 't') {
+        const it = items[sel];
+        if (it && llm) void translateStory(llm, it, target).then((r) => put(it.id, r)).catch(() => {});
+      } else if (k === 'r') {
+        setTick((x) => x + 1);
+      } else return;
+      if (e.key !== 'Enter') requestAnimationFrame(() => {
+        document.querySelector('[data-rank="' + sel + '"]')?.scrollIntoView({ block: 'nearest' });
+      });
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [items, sel, llm, target, put, navigate]);
 
   const sentinel = useSentinel(
     () => setVisible((v) => (ids && v < ids.length ? v + PAGE : v)),
@@ -83,6 +124,8 @@ export default function StoryList({ feed }: { feed: FeedId }) {
           key={item.id}
           item={item}
           rank={rankBase + i}
+          idx={i}
+          selected={sel === i}
           read={readIds.has(item.id)}
           bookmarked={bookmarks.has(item.id)}
           onToggleBookmark={async (id) => {
