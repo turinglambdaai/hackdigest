@@ -1,35 +1,71 @@
-// Bookmarks & read-history helpers over the core KV stores.
+// Bookmarks & read history. In packaged builds these live in library.json
+// (app-config dir, survives updates); in plain browsers, IndexedDB.
 
 import { idbAll, idbDel, idbGet, idbSet } from '@hackdigest/core';
+import { isTauri, readDataFile, writeDataFile } from '@hackdigest/core';
 
 export interface BookmarkEntry {
   id: number;
   ts: number;
 }
 
+interface HistoryEntry {
+  id: number;
+  ts: number;
+}
+
+interface Library {
+  bookmarks: BookmarkEntry[];
+  history: HistoryEntry[];
+}
+
+const EMPTY: Library = { bookmarks: [], history: [] };
+
+async function loadLibrary(): Promise<Library> {
+  const fromFile = await readDataFile<Library>('library');
+  if (fromFile) return { ...EMPTY, ...fromFile };
+  if (!isTauri()) {
+    // Browser dev: migrate/adopt IndexedDB data.
+    const [b, h] = await Promise.all([
+      idbAll<BookmarkEntry>('bookmarks'),
+      idbAll<HistoryEntry>('history'),
+    ]);
+    const lib = { bookmarks: b.sort((x, y) => y.ts - x.ts), history: h };
+    if (b.length || h.length) await writeDataFile('library', lib);
+    return lib;
+  }
+  return EMPTY;
+}
+
+async function saveLibrary(lib: Library): Promise<void> {
+  await writeDataFile('library', lib);
+}
+
 export async function listBookmarks(): Promise<BookmarkEntry[]> {
-  const all = await idbAll<BookmarkEntry>('bookmarks');
-  return all.sort((a, b) => b.ts - a.ts);
+  return (await loadLibrary()).bookmarks.sort((a, b) => b.ts - a.ts);
 }
 
 export async function isBookmarked(id: number): Promise<boolean> {
-  return (await idbGet('bookmarks', id)) != null;
+  return (await loadLibrary()).bookmarks.some((e) => e.id === id);
 }
 
 export async function toggleBookmark(id: number): Promise<boolean> {
-  if (await isBookmarked(id)) {
-    await idbDel('bookmarks', id);
-    return false;
-  }
-  await idbSet('bookmarks', id, { id, ts: Date.now() });
-  return true;
+  const lib = await loadLibrary();
+  const exists = lib.bookmarks.some((e) => e.id === id);
+  lib.bookmarks = exists ? lib.bookmarks.filter((e) => e.id !== id) : [...lib.bookmarks, { id, ts: Date.now() }];
+  await saveLibrary(lib);
+  if (!isTauri()) await idbDel('bookmarks', id).catch(() => {});
+  return !exists;
 }
 
 export async function listReadIds(): Promise<Set<number>> {
-  const all = await idbAll<{ id: number }>('history');
-  return new Set(all.map((e) => e.id));
+  return new Set((await loadLibrary()).history.map((e) => e.id));
 }
 
 export async function markRead(id: number): Promise<void> {
-  await idbSet('history', id, { id, ts: Date.now() });
+  const lib = await loadLibrary();
+  if (lib.history.some((e) => e.id === id)) return;
+  lib.history = [...lib.history.slice(-4999), { id, ts: Date.now() }];
+  await saveLibrary(lib);
+  if (!isTauri()) await idbSet('history', id, { id, ts: Date.now() }).catch(() => {});
 }

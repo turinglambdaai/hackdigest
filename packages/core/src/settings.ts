@@ -1,12 +1,12 @@
-// App settings persisted in IndexedDB ('meta' store), mirrored to a JSON
-// file in the OS app-config dir when running under Tauri — IndexedDB has
-// been observed wiped by WebView2 updates, so the file is the durable copy
-// and IndexedDB is the fast path.
+// App settings: the JSON file in the OS app-config dir is the source of
+// truth in packaged builds (IndexedDB there proved non-persistent and was
+// wiped on updates). IndexedDB remains the store for plain-browser dev.
 
 import type { LLMConfig } from './llm';
 import type { HostedStatus } from './hosted';
 import { kvGet, kvSet } from './store';
 import { isTauri } from './llm';
+import { readDataFile, writeDataFile } from './dataFile';
 
 export interface Shortcuts {
   listNext: string;
@@ -56,43 +56,30 @@ export const DEFAULT_SETTINGS: Settings = {
   shortcuts: DEFAULT_SHORTCUTS,
 };
 
-async function readSettingsFile(): Promise<Partial<Settings> | null> {
-  if (!isTauri()) return null;
-  try {
-    const { invoke } = await import('@tauri-apps/api/core');
-    const json = await invoke<string | null>('read_settings_file');
-    return json ? (JSON.parse(json) as Partial<Settings>) : null;
-  } catch {
-    return null;
-  }
-}
-
-async function writeSettingsFile(s: Settings): Promise<void> {
-  if (!isTauri()) return;
-  try {
-    const { invoke } = await import('@tauri-apps/api/core');
-    await invoke('write_settings_file', { json: JSON.stringify(s) });
-  } catch {
-    /* file is a mirror; IndexedDB remains the primary store */
-  }
+function merge(raw: Partial<Settings> | null | undefined): Settings {
+  return { ...DEFAULT_SETTINGS, ...raw, shortcuts: { ...DEFAULT_SHORTCUTS, ...(raw?.shortcuts ?? {}) } };
 }
 
 export async function loadSettings(): Promise<Settings> {
-  const saved = await kvGet<Partial<Settings>>('meta', 'settings');
-  if (saved && (saved.llm || saved.providerId)) {
-    return { ...DEFAULT_SETTINGS, ...saved, shortcuts: { ...DEFAULT_SHORTCUTS, ...(saved.shortcuts ?? {}) } };
-  }
-  // IndexedDB empty/wiped → recover from the filesystem mirror.
-  const fromFile = await readSettingsFile();
-  if (fromFile && (fromFile.llm || fromFile.providerId)) {
-    const merged = { ...DEFAULT_SETTINGS, ...fromFile, shortcuts: { ...DEFAULT_SHORTCUTS, ...(fromFile.shortcuts ?? {}) } };
-    await kvSet('meta', 'settings', merged);
+  if (isTauri()) {
+    // File is the source of truth in packaged builds.
+    const fromFile = await readDataFile<Partial<Settings>>('settings');
+    if (fromFile) return merge(fromFile);
+    // First run after this migration: adopt whatever IndexedDB still has.
+    const saved = await kvGet<Partial<Settings>>('meta', 'settings');
+    const merged = merge(saved);
+    if (saved) void writeDataFile('settings', merged);
     return merged;
   }
-  return DEFAULT_SETTINGS;
+  const saved = await kvGet<Partial<Settings>>('meta', 'settings');
+  return merge(saved);
 }
 
 export async function saveSettings(s: Settings): Promise<void> {
+  if (isTauri()) {
+    await writeDataFile('settings', s);
+    void kvSet('meta', 'settings', s); // best effort, dev convenience
+    return;
+  }
   await kvSet('meta', 'settings', s);
-  void writeSettingsFile(s);
 }
