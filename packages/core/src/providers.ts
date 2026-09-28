@@ -26,10 +26,10 @@ export const PROVIDERS: ProviderPreset[] = [
     id: 'glm',
     label: '智谱 GLM',
     baseUrl: 'https://open.bigmodel.cn/api/paas/v4',
-    defaultModel: 'glm-4-flash',
-    models: ['glm-4-flash', 'glm-4-air', 'glm-4-plus', 'glm-4.6'],
+    defaultModel: 'glm-5.3-flash',
+    models: ['glm-5.3-flash', 'glm-5.3', 'glm-4.6', 'glm-4-flash'],
     keyUrl: 'https://open.bigmodel.cn/usercenter/apikeys',
-    note: 'glm-4-flash 有免费额度，国内直连',
+    note: 'glm-5.3-flash 免费商用，国内直连',
   },
   {
     id: 'deepseek',

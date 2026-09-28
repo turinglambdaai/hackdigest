@@ -17,7 +17,7 @@ import { useSettings, useTrans } from '../state/store';
 import { openExternal } from '../lib/hooks';
 import { checkForUpdate, relaunchApp } from '../lib/updater';
 
-const APP_VERSION = '0.2.0';
+const APP_VERSION = '0.2.1';
 const REPO_URL = 'https://github.com/turinglambdaai/hackdigest';
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -151,10 +151,10 @@ export default function SettingsPage() {
         </Row>
         <Row label={t.fontSize}>
           <select className={inputCls} value={settings.fontScale} onChange={(e) => patch({ fontScale: Number(e.target.value) })}>
-            <option value={0.9}>A−</option>
-            <option value={1}>A</option>
-            <option value={1.1}>A+</option>
-            <option value={1.25}>A++</option>
+            <option value={0.9}>90%</option>
+            <option value={1}>100%</option>
+            <option value={1.1}>110%</option>
+            <option value={1.25}>125%</option>
           </select>
         </Row>
       </Section>

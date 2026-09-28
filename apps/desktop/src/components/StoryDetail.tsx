@@ -33,6 +33,7 @@ export default function StoryDetail({ id }: { id: number }) {
 
   const [story, setStory] = useState<HNItem | null>(null);
   const [comments, setComments] = useState<HNItem[]>([]);
+  const [commentsLoading, setCommentsLoading] = useState(false);
   const [translating, setTranslating] = useState(false);
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
   const [digest, setDigest] = useState<string | null>(null);
@@ -68,6 +69,7 @@ export default function StoryDetail({ id }: { id: number }) {
     if (!story?.kids?.length) return;
     const ac = new AbortController();
     abortRef.current = ac;
+    setCommentsLoading(true);
     const buffer: HNItem[] = [];
     let flushTimer: number | undefined;
     const flush = () => {
@@ -91,7 +93,7 @@ export default function StoryDetail({ id }: { id: number }) {
         const seen = new Set(prev.map((c) => c.id));
         return [...prev, ...all.filter((c) => !seen.has(c.id))];
       });
-    });
+    }).finally(() => setCommentsLoading(false));
     return () => {
       ac.abort();
       if (flushTimer != null) clearTimeout(flushTimer);
@@ -284,6 +286,12 @@ export default function StoryDetail({ id }: { id: number }) {
         )}
 
         <div className="mt-6 border-t border-line pt-2">
+          {commentsLoading && (
+            <div className="flex items-center gap-2 py-2 text-xs text-mute">
+              <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-accent" />
+              {t.loadingComments.replace('{n}', String(comments.length)).replace('{m}', String(story.descendants ?? '?'))}
+            </div>
+          )}
           {comments.length === 0 ? (
             <div className="py-6 text-center text-sm text-mute">
               {story.kids?.length ? t.loading : t.noResults}

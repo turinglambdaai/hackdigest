@@ -86,6 +86,7 @@ const zh = {
   hostedExpires: '到期',
   hostedUsage: '今日用量',
   hostedQuotaNote: '（缓存命中的翻译不消耗额度）',
+  loadingComments: '加载评论中… 已加载 {n} 条 / 共约 {m} 条（HN 接口逐条拉取，稍安勿躁）',
 };
 
 const en: typeof zh = {
@@ -171,6 +172,7 @@ const en: typeof zh = {
   hostedExpires: 'expires',
   hostedUsage: 'Usage today',
   hostedQuotaNote: '(cache hits are free)',
+  loadingComments: 'Loading comments… {n} of ~{m} fetched (the HN API loads them one by one)',
 };
 
 const dicts = { zh, en };
