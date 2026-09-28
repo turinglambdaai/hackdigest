@@ -1,11 +1,11 @@
 // Story detail: bilingual header, translate-all, thread digest, comment tree.
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   digestThread,
   domainOf,
-  fetchCommentTree,
   fetchItem,
+  fetchItems,
   miniMarkdown,
   sanitizeHtml,
   timeAgo,
@@ -35,6 +35,7 @@ export default function StoryDetail({ id }: { id: number }) {
 
   const [story, setStory] = useState<HNItem | null>(null);
   const [comments, setComments] = useState<HNItem[]>([]);
+  const [loadedParents, setLoadedParents] = useState<Set<number>>(new Set());
   const [commentsLoading, setCommentsLoading] = useState(false);
   const [translatingStory, setTranslatingStory] = useState(false);
   const [translatingAll, setTranslatingAll] = useState(false);
@@ -48,6 +49,7 @@ export default function StoryDetail({ id }: { id: number }) {
     let alive = true;
     setStory(null);
     setComments([]);
+    setLoadedParents(new Set());
     setDigest(null);
     setTranslatingStory(false);
     setTranslatingAll(false);
@@ -68,41 +70,35 @@ export default function StoryDetail({ id }: { id: number }) {
     };
   }, [id, target, put]);
 
-  // Progressive comment loading.
+  // Lazy comments: only the top level loads with the story; each subtree is
+  // fetched on demand ("Expand N replies") instead of pulling 1000 items up front.
+  const loadKids = useCallback(async (parentId: number, kids: number[]) => {
+    setLoadedParents((prev) => {
+      if (prev.has(parentId)) return prev;
+      const next = new Set(prev);
+      next.add(parentId);
+      return next;
+    });
+    const got = await fetchItems(kids);
+    setComments((prev) => {
+      const seen = new Set(prev.map((c) => c.id));
+      return [...prev, ...got.filter((x): x is HNItem => x != null && !x.dead && !x.deleted && !seen.has(x.id))];
+    });
+  }, []);
+
   useEffect(() => {
     if (!story?.kids?.length) return;
-    const ac = new AbortController();
-    abortRef.current = ac;
     setCommentsLoading(true);
-    const buffer: HNItem[] = [];
-    let flushTimer: number | undefined;
-    const flush = () => {
-      if (buffer.length) {
-        const chunk = buffer.splice(0, buffer.length);
-        setComments((prev) => [...prev, ...chunk]);
-      }
-    };
-    void fetchCommentTree(
-      story.kids!,
-      (item) => {
-        buffer.push(item);
-        if (flushTimer == null) flushTimer = window.setTimeout(() => (flush(), (flushTimer = undefined)), 120);
-      },
-      ac.signal
-    ).then((all) => {
-      flush();
-      if (all.length === 0) return;
-      // De-dup in case buffered and final overlap.
-      setComments((prev) => {
-        const seen = new Set(prev.map((c) => c.id));
-        return [...prev, ...all.filter((c) => !seen.has(c.id))];
-      });
-    }).finally(() => setCommentsLoading(false));
-    return () => {
-      ac.abort();
-      if (flushTimer != null) clearTimeout(flushTimer);
-    };
-  }, [story?.id, story?.kids]);
+    void loadKids(story.id, story.kids).finally(() => setCommentsLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [story?.id]);
+
+  const expandKids = useCallback(
+    (item: HNItem) => {
+      if (item.kids?.length) void loadKids(item.id, item.kids);
+    },
+    [loadKids]
+  );
 
 
   // Keyboard: <-/u back, t translate story, Shift+T translate all, d digest.
@@ -323,7 +319,7 @@ export default function StoryDetail({ id }: { id: number }) {
           {commentsLoading && (
             <div className="flex items-center gap-2 py-2 text-xs text-mute">
               <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-accent" />
-              {t.loadingComments.replace('{n}', String(comments.length)).replace('{m}', String(story.descendants ?? '?'))}
+              {t.loadingComments}
             </div>
           )}
           {comments.length === 0 ? (
@@ -333,7 +329,14 @@ export default function StoryDetail({ id }: { id: number }) {
           ) : (
             <div className="space-y-3 pb-10">
               {roots.map((c) => (
-                <CommentNode key={c.id} item={c} children={tree.get(c.id)} tree={tree} />
+                <CommentNode
+                  key={c.id}
+                  item={c}
+                  children={tree.get(c.id)}
+                  tree={tree}
+                  kidsLoaded={loadedParents.has(c.id)}
+                  onExpandKids={expandKids}
+                />
               ))}
             </div>
           )}

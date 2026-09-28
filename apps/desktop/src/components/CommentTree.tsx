@@ -34,9 +34,11 @@ interface NodeProps {
   item: HNItem;
   children: HNItem[] | undefined;
   tree: Map<number, HNItem[]>;
+  kidsLoaded: boolean;
+  onExpandKids: (item: HNItem) => void;
 }
 
-export function CommentNode({ item, children, tree }: NodeProps) {
+export function CommentNode({ item, children, tree, kidsLoaded, onExpandKids }: NodeProps) {
   const { t, lang } = useI18n();
   const llm = useSettings((s) => s.settings.llm);
   const target = useSettings((s) => s.settings.translateTarget);
@@ -46,14 +48,11 @@ export function CommentNode({ item, children, tree }: NodeProps) {
   const collapsed = useTree((s) => !!s.collapsed[item.id]);
   const toggleCollapse = useTree((s) => s.toggleCollapse);
   const [busy, setBusy] = useState(false);
+  const [expanding, setExpanding] = useState(false);
   const [showOriginal, setShowOriginal] = useState(false);
 
-  const replyCount = (function count(nodes: HNItem[] | undefined): number {
-    if (!nodes) return 0;
-    let n = 0;
-    for (const c of nodes) n += 1 + count(tree.get(c.id));
-    return n;
-  })(children);
+  const replyCount = item.kids?.length ?? 0; // direct replies; descendants unknown until expanded
+  const loadingKids = !kidsLoaded && replyCount > 0;
 
   const translateOne = async () => {
     if (!llm) { toast.info(t.noKeyTitle + ' — ' + t.goSettings); navigate({ type: 'settings' }); return; }
@@ -120,9 +119,33 @@ export function CommentNode({ item, children, tree }: NodeProps) {
           {children && children.length > 0 && (
             <div className="mt-2 ml-1 space-y-1 border-l border-line pl-3">
               {children.map((c) => (
-                <CommentNode key={c.id} item={c} children={tree.get(c.id)} tree={tree} />
+                <CommentNode
+                  key={c.id}
+                  item={c}
+                  children={tree.get(c.id)}
+                  tree={tree}
+                  kidsLoaded={tree.has(c.id) || !c.kids?.length}
+                  onExpandKids={onExpandKids}
+                />
               ))}
             </div>
+          )}
+          {loadingKids && (
+            <button
+              className="mt-2 ml-1 flex items-center gap-1.5 rounded-md border border-line bg-raised px-2.5 py-1 text-[11px] text-mute hover:border-accent hover:text-accent"
+              disabled={expanding}
+              onClick={() => {
+                setExpanding(true);
+                Promise.resolve(onExpandKids(item)).finally(() => setExpanding(false));
+              }}
+            >
+              {expanding ? (
+                <IconChevronDown className="animate-pulse" width={11} height={11} />
+              ) : (
+                <IconChevronDown className="rotate-[-90deg]" width={11} height={11} />
+              )}
+              {t.expandReplies.replace('{n}', String(replyCount))}
+            </button>
           )}
         </>
       )}
