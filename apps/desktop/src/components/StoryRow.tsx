@@ -87,7 +87,7 @@ export default function StoryRow({ item, rank, idx, selected, read, bookmarked, 
             className="rounded-md p-1.5 text-mute opacity-0 transition-opacity hover:bg-raised hover:text-accent group-hover:opacity-100 focus:opacity-100"
             onClick={quickTranslate}
           >
-            <IconTranslate className={busy ? 'animate-pulse' : ''} width={14} height={14} />
+            <IconTranslate className={busy ? 'animate-spin' : ''} width={14} height={14} />
           </button>
           <button
             title={bookmarked ? t.bookmarkRemoved : t.bookmarkAdded}

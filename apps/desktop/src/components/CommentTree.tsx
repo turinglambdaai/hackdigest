@@ -101,7 +101,7 @@ export function CommentNode({ item, children, tree }: NodeProps) {
           }`}
           onClick={translateOne}
         >
-          <IconTranslate className={busy ? 'animate-pulse' : ''} width={13} height={13} />
+          <IconTranslate className={busy ? 'animate-spin' : ''} width={13} height={13} />
         </button>
       </div>
 

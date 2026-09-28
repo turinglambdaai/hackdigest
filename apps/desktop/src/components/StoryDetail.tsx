@@ -21,7 +21,7 @@ import { isBookmarked, toggleBookmark, markRead } from '../lib/bookmarks';
 import { CommentNode, buildTree, collectVisible } from './CommentTree';
 import { toast } from './Toast';
 import { isTypingTarget } from '../lib/keys';
-import { IconChevronLeft, IconExternal, IconStar, IconTranslate, IconSpark } from './icons';
+import { IconChevronLeft, IconExternal, IconStar, IconTranslate, IconSpark, IconRefresh } from './icons';
 
 export default function StoryDetail({ id }: { id: number }) {
   const { t, lang } = useI18n();
@@ -35,7 +35,8 @@ export default function StoryDetail({ id }: { id: number }) {
   const [story, setStory] = useState<HNItem | null>(null);
   const [comments, setComments] = useState<HNItem[]>([]);
   const [commentsLoading, setCommentsLoading] = useState(false);
-  const [translating, setTranslating] = useState(false);
+  const [translatingStory, setTranslatingStory] = useState(false);
+  const [translatingAll, setTranslatingAll] = useState(false);
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
   const [digest, setDigest] = useState<string | null>(null);
   const [digesting, setDigesting] = useState(false);
@@ -47,7 +48,8 @@ export default function StoryDetail({ id }: { id: number }) {
     setStory(null);
     setComments([]);
     setDigest(null);
-    setTranslating(false);
+    setTranslatingStory(false);
+    setTranslatingAll(false);
     setProgress(null);
     void isBookmarked(id).then((b) => alive && setBookmarked(b));
     void markRead(id);
@@ -127,15 +129,15 @@ export default function StoryDetail({ id }: { id: number }) {
 
   const translateStoryNow = async () => {
     const cfg = requireLLM();
-    if (!cfg || !story || translating) return;
-    setTranslating(true);
+    if (!cfg || !story || translatingStory) return;
+    setTranslatingStory(true);
     try {
       const r = await translateStory(cfg, story, target);
       put(id, r);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : String(e));
     } finally {
-      setTranslating(false);
+      setTranslatingStory(false);
     }
   };
 
@@ -147,10 +149,10 @@ export default function StoryDetail({ id }: { id: number }) {
   const translateAllComments = async () => {
     const cfg = requireLLM();
     const visible = collectVisible(roots, tree, useTree.getState().collapsed);
-    if (!cfg || translating || visible.length === 0) return;
+    if (!cfg || translatingAll || visible.length === 0) return;
     const ac = new AbortController();
     abortRef.current = ac;
-    setTranslating(true);
+    setTranslatingAll(true);
     setProgress({ done: 0, total: visible.length });
     try {
       await translateComments(
@@ -166,7 +168,7 @@ export default function StoryDetail({ id }: { id: number }) {
     } catch (e) {
       if (!ac.signal.aborted) toast.error(e instanceof Error ? e.message : String(e));
     } finally {
-      setTranslating(false);
+      setTranslatingAll(false);
       setProgress(null);
     }
   };
@@ -249,19 +251,23 @@ export default function StoryDetail({ id }: { id: number }) {
           <button
             className="flex items-center gap-1.5 rounded-lg border border-line bg-surface px-3 py-1.5 text-xs font-medium hover:bg-raised"
             onClick={translateStoryNow}
-            disabled={translating}
+            disabled={translatingStory}
           >
-            <IconTranslate className={translating ? 'animate-pulse' : ''} width={13} height={13} />
-            {t.translateStoryBtn}
+            {translatingStory ? (
+              <IconRefresh className="animate-spin" width={13} height={13} />
+            ) : (
+              <IconTranslate width={13} height={13} />
+            )}
+            {translatingStory ? `${t.translating}…` : t.translateStoryBtn}
           </button>
           {comments.length > 0 && (
             <button
               title={t.translateVisibleHint}
               className="flex items-center gap-1.5 rounded-lg border border-line bg-surface px-3 py-1.5 text-xs font-medium hover:bg-raised"
               onClick={translateAllComments}
-              disabled={translating}
+              disabled={translatingAll}
             >
-              <IconTranslate className={translating ? 'animate-pulse' : ''} width={13} height={13} />
+              <IconTranslate className={translatingAll ? 'animate-pulse' : ''} width={13} height={13} />
               {t.translateAll}
               {progress ? ` (${progress.done}/${progress.total})` : ` (${visibleComments.length})`}
             </button>
@@ -286,7 +292,7 @@ export default function StoryDetail({ id }: { id: number }) {
           </button>
         </div>
 
-        {translating && progress && (
+        {translatingAll && progress && (
           <div className="mt-2 text-xs text-accent">{t.translatedProgress.replace('{done}', String(progress.done)).replace('{total}', String(progress.total))}</div>
         )}
 
