@@ -16,8 +16,9 @@ import { useI18n } from '../i18n';
 import { useSettings, useTrans } from '../state/store';
 import { openExternal } from '../lib/hooks';
 import { checkForUpdate, relaunchApp } from '../lib/updater';
+import ShortcutSettings from './ShortcutSettings';
 
-const APP_VERSION = '0.2.6';
+const APP_VERSION = '0.3.0';
 const REPO_URL = 'https://github.com/turinglambdaai/hackdigest';
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -158,6 +159,8 @@ export default function SettingsPage() {
           </select>
         </Row>
       </Section>
+
+      <ShortcutSettings />
 
       <Section title={t.settingsAI}>
         <p className="mb-4 rounded-lg bg-raised p-3 text-xs leading-relaxed text-mute">{t.byokHint}</p>

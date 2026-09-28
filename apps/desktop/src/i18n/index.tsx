@@ -107,6 +107,10 @@ const zh = {
   sk_digest: 'AI 评论摘要',
   sk_search: '聚焦搜索',
   sk_help: '快捷键速查',
+  skReset: '恢复默认',
+  skHint: '点击键位后按一个新键即可更改（字母或数字，可配合 Shift）；↑↓/Enter/← 与 1-6、/、? 为固定键。',
+  skFixed: '固定键（不可更改）',
+  skConflict: '{key} 已被「{action}」占用',
 };
 
 const en: typeof zh = {
@@ -213,6 +217,10 @@ const en: typeof zh = {
   sk_digest: 'AI thread digest',
   sk_search: 'Focus search',
   sk_help: 'This cheat sheet',
+  skReset: 'Reset defaults',
+  skHint: 'Click a key then press a new one (letter/digit, Shift allowed). Arrow keys, Enter, 1-6, / and ? are fixed.',
+  skFixed: 'Fixed keys',
+  skConflict: "{key} is already used by '{action}'",
 };
 
 const dicts = { zh, en };

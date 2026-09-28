@@ -1,6 +1,6 @@
 [package]
 name = "hackdigest"
-version = "0.2.6"
+version = "0.3.0"
 description = "Hacker News, in your language"
 authors = ["jrtxio"]
 edition = "2021"

@@ -29,6 +29,7 @@ export default function StoryDetail({ id }: { id: number }) {
   const back = useUI((s) => s.back);
   const llm = useSettings((s) => s.settings.llm);
   const target = useSettings((s) => s.settings.translateTarget);
+  const sc = useSettings((s) => s.settings.shortcuts);
   const trans = useTrans((s) => s.map[id]);
   const put = useTrans((s) => s.put);
 
@@ -108,13 +109,13 @@ export default function StoryDetail({ id }: { id: number }) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (isTypingTarget(e) || e.metaKey || e.ctrlKey || e.altKey) return;
-      if (e.key === 'ArrowLeft' || e.key.toLowerCase() === 'u') {
+      if (e.key === 'ArrowLeft' || e.key === sc.detailBack) {
         back();
-      } else if (e.key.toLowerCase() === 't' && !e.shiftKey) {
+      } else if (e.key === sc.detailTranslate) {
         void translateStoryNow();
-      } else if (e.key.toLowerCase() === 't' && e.shiftKey) {
+      } else if (e.key === sc.detailTranslateAll) {
         void translateAllComments();
-      } else if (e.key.toLowerCase() === 'd') {
+      } else if (e.key === sc.detailDigest) {
         void runDigest();
       }
     };

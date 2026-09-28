@@ -8,6 +8,32 @@ import type { HostedStatus } from './hosted';
 import { kvGet, kvSet } from './store';
 import { isTauri } from './llm';
 
+export interface Shortcuts {
+  listNext: string;
+  listPrev: string;
+  listOpen: string;
+  listStar: string;
+  listTranslate: string;
+  listRefresh: string;
+  detailBack: string;
+  detailTranslate: string;
+  detailTranslateAll: string;
+  detailDigest: string;
+}
+
+export const DEFAULT_SHORTCUTS: Shortcuts = {
+  listNext: 'j',
+  listPrev: 'k',
+  listOpen: 'o',
+  listStar: 's',
+  listTranslate: 't',
+  listRefresh: 'r',
+  detailBack: 'u',
+  detailTranslate: 't',
+  detailTranslateAll: 'T',
+  detailDigest: 'd',
+};
+
 export interface Settings {
   uiLang: 'zh' | 'en';
   theme: 'light' | 'dark' | 'auto';
@@ -16,6 +42,7 @@ export interface Settings {
   llm: LLMConfig | null;
   providerId: string; // preset id, '' when unset
   hostedStatus: HostedStatus | null; // cached activation/quota state
+  shortcuts: Shortcuts;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -26,6 +53,7 @@ export const DEFAULT_SETTINGS: Settings = {
   llm: null,
   providerId: '',
   hostedStatus: null,
+  shortcuts: DEFAULT_SHORTCUTS,
 };
 
 async function readSettingsFile(): Promise<Partial<Settings> | null> {
@@ -52,12 +80,12 @@ async function writeSettingsFile(s: Settings): Promise<void> {
 export async function loadSettings(): Promise<Settings> {
   const saved = await kvGet<Partial<Settings>>('meta', 'settings');
   if (saved && (saved.llm || saved.providerId)) {
-    return { ...DEFAULT_SETTINGS, ...saved };
+    return { ...DEFAULT_SETTINGS, ...saved, shortcuts: { ...DEFAULT_SHORTCUTS, ...(saved.shortcuts ?? {}) } };
   }
   // IndexedDB empty/wiped → recover from the filesystem mirror.
   const fromFile = await readSettingsFile();
   if (fromFile && (fromFile.llm || fromFile.providerId)) {
-    const merged = { ...DEFAULT_SETTINGS, ...fromFile };
+    const merged = { ...DEFAULT_SETTINGS, ...fromFile, shortcuts: { ...DEFAULT_SHORTCUTS, ...(fromFile.shortcuts ?? {}) } };
     await kvSet('meta', 'settings', merged);
     return merged;
   }

@@ -25,6 +25,7 @@ export default function StoryList({ feed }: { feed: FeedId }) {
   const [tick, setTick] = useState(0);
   const [sel, setSel] = useState(0);
   const llm = useSettings((st) => st.settings.llm);
+  const sc = useSettings((st) => st.settings.shortcuts);
   const target = useSettings((st) => st.settings.translateTarget);
   const put = useTrans((st) => st.put);
   const navigate = useUI((st) => st.navigate);
@@ -62,23 +63,23 @@ export default function StoryList({ feed }: { feed: FeedId }) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (isTypingTarget(e) || e.metaKey || e.ctrlKey || e.altKey) return;
-      const k = e.key.toLowerCase();
-      if (k === 'j' || e.key === 'ArrowDown') {
+      const k = e.key;
+      if (k === sc.listNext || e.key === 'ArrowDown') {
         setSel((i) => Math.min(i + 1, items.length - 1));
         e.preventDefault();
-      } else if (k === 'k' || e.key === 'ArrowUp') {
+      } else if (k === sc.listPrev || e.key === 'ArrowUp') {
         setSel((i) => Math.max(i - 1, 0));
         e.preventDefault();
-      } else if (e.key === 'Enter' || k === 'o') {
+      } else if (e.key === 'Enter' || k === sc.listOpen) {
         const it = items[sel];
         if (it) navigate({ type: 'story', id: it.id });
-      } else if (k === 's') {
+      } else if (k === sc.listStar) {
         const it = items[sel];
         if (it) void toggleBookmark(it.id);
-      } else if (k === 't') {
+      } else if (k === sc.listTranslate) {
         const it = items[sel];
         if (it && llm) void translateStory(llm, it, target).then((r) => put(it.id, r)).catch(() => {});
-      } else if (k === 'r') {
+      } else if (k === sc.listRefresh) {
         setTick((x) => x + 1);
       } else return;
       if (e.key !== 'Enter') requestAnimationFrame(() => {
@@ -87,7 +88,7 @@ export default function StoryList({ feed }: { feed: FeedId }) {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [items, sel, llm, target, put, navigate]);
+  }, [items, sel, llm, target, put, navigate, sc]);
 
   const sentinel = useSentinel(
     () => setVisible((v) => (ids && v < ids.length ? v + PAGE : v)),
