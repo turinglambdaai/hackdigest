@@ -1,7 +1,7 @@
 // Hacker News official Firebase API client.
 // Docs: https://github.com/HackerNews/API
 
-import { kvGet, kvSet } from './store';
+import { getStoredItem, putStoredItems } from './storage';
 
 const FB = 'https://hacker-news.firebaseio.com/v0';
 
@@ -47,7 +47,7 @@ export async function fetchItem(id: number): Promise<HNItem | null> {
   const pending = inflight.get(id);
   if (pending) return pending;
   const p = (async () => {
-    const cached = await kvGet<HNItem>('items', id);
+    const cached = (await getStoredItem(id)) as HNItem | null;
     if (cached) {
       memory.set(id, cached);
       return cached;
@@ -57,7 +57,7 @@ export async function fetchItem(id: number): Promise<HNItem | null> {
     const item: HNItem | null = await res.json();
     if (item) {
       memory.set(id, item);
-      void kvSet('items', id, item);
+      void putStoredItems([item]);
     }
     return item;
   })().finally(() => inflight.delete(id));

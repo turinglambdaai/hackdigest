@@ -4,7 +4,7 @@
 
 import type { HNItem } from './hn';
 import { chat, type LLMConfig } from './llm';
-import { kvGet, kvSet } from './store';
+import { getStoredTranslation, getStoredTranslations, putStoredTranslations } from './storage';
 
 export interface Translation {
   title?: string;
@@ -19,8 +19,7 @@ interface CacheEntry extends Translation {
 const cacheKey = (id: number, lang: string) => `${id}:${lang}`;
 
 export async function getCachedTranslation(id: number, lang: string): Promise<Translation | null> {
-  const hit = await kvGet<CacheEntry>('trans', cacheKey(id, lang));
-  return hit ?? null;
+  return getStoredTranslation(id, lang);
 }
 
 export function extractJson(raw: string): Record<string, unknown> {
@@ -60,7 +59,7 @@ export async function translateStory(
       if (attempt >= 1) throw e;
     }
   }
-  await kvSet('trans', cacheKey(story.id, lang), { ...out, model: cfg.model, lang });
+  await putStoredTranslations([{ id: story.id, title: out.title, text: out.text }], lang, cfg.model);
   return out;
 }
 
@@ -118,17 +117,11 @@ export async function translateComments(
 ): Promise<void> {
   // Warm the cache in parallel chunks (serial per-item reads crawl on 1000+ threads).
   const pending: HNItem[] = [];
-  const CHUNK = 100;
-  for (let i = 0; i < comments.length; i += CHUNK) {
-    if (signal?.aborted) return;
-    const slice = comments.slice(i, i + CHUNK);
-    const cached = await Promise.all(
-      slice.map(async (c) => ({ c, t: await getCachedTranslation(c.id, lang) }))
-    );
-    for (const { c, t } of cached) {
-      if (t?.text) onBatch?.(new Map([[c.id, t.text]]), { done: 0, total: comments.length });
-      else pending.push(c);
-    }
+  const cachedMap = await getStoredTranslations(comments.map((c) => c.id), lang);
+  for (const c of comments) {
+    const hit = cachedMap.get(c.id);
+    if (hit?.text) onBatch?.(new Map([[c.id, hit.text]]), { done: 0, total: comments.length });
+    else pending.push(c);
   }
   const BATCH = 40;
   const CONCURRENCY = 2; // batches in flight — ~2x faster without hammering rate limits
@@ -141,9 +134,11 @@ export async function translateComments(
       const slice = pending.slice(i, i + BATCH);
       try {
         const map = await translateBatch(cfg, slice, lang, signal);
-        for (const [id, text] of map) {
-          await kvSet('trans', cacheKey(id, lang), { text, model: cfg.model, lang });
-        }
+        await putStoredTranslations(
+          slice.filter((c) => map.has(c.id)).map((c) => ({ id: c.id, text: map.get(c.id)! })),
+          lang,
+          cfg.model
+        );
         done += slice.length;
         onBatch?.(map, { done, total: comments.length });
       } catch (e) {

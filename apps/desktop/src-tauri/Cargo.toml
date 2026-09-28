@@ -1,6 +1,6 @@
 [package]
 name = "hackdigest"
-version = "0.3.2"
+version = "0.4.0"
 description = "Hacker News, in your language"
 authors = ["jrtxio"]
 edition = "2021"
@@ -20,6 +20,7 @@ tauri-plugin-http = "~2.6.0"
 tauri-plugin-opener = "2"
 tauri-plugin-updater = "~2.12.0"
 tauri-plugin-process = "~2.3.0"
+rusqlite = { version = "0.37", features = ["bundled"] }
 
 [profile.release]
 codegen-units = 1

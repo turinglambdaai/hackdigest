@@ -1,3 +1,5 @@
+mod db;
+
 use tauri::Manager;
 
 /// Durable app data lives as JSON files in the OS app-config dir — the
@@ -31,7 +33,24 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_process::init())
-        .invoke_handler(tauri::generate_handler![read_data_file, write_data_file])
+        .setup(|app| match db::init(app.handle()) {
+            Ok(sqlite) => {
+                app.manage(sqlite);
+                Ok(())
+            }
+            Err(e) => Err(e.into()),
+        })
+        .invoke_handler(tauri::generate_handler![
+            read_data_file,
+            write_data_file,
+            db::kv_get,
+            db::kv_set,
+            db::get_translation,
+            db::get_translations,
+            db::put_translations,
+            db::get_item,
+            db::put_items
+        ])
         .run(tauri::generate_context!())
         .expect("error while running hackdigest");
 }

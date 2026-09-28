@@ -2,7 +2,7 @@
 // free trials, and quota status. The chat path itself needs nothing new —
 // the service speaks the OpenAI protocol, so core's LLMConfig points at it.
 
-import { kvGet, kvSet } from './store';
+import { storageKvGet, storageKvSet } from './storage';
 
 export const HOSTED_BASE_URL = 'https://hd.jrtx.site/v1';
 
@@ -16,10 +16,10 @@ export interface HostedStatus {
 
 /** Stable per-install device id (used for trials and device binding). */
 export async function getDeviceId(): Promise<string> {
-  const existing = await kvGet<string>('meta', 'deviceId');
+  const existing = await storageKvGet('deviceId');
   if (existing) return existing;
   const id = (crypto.randomUUID?.() ?? `dev-${Date.now()}-${Math.random().toString(36).slice(2)}`).replace(/-/g, '');
-  await kvSet('meta', 'deviceId', id);
+  await storageKvSet('deviceId', id);
   return id;
 }
 

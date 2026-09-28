@@ -4,6 +4,7 @@ export * from './llm';
 export * from './providers';
 export * from './hosted';
 export * from './dataFile';
+export * from './storage';
 export * from './translate';
 export * from './digest';
 export * from './settings';

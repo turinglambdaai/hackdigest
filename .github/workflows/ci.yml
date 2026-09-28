@@ -49,3 +49,7 @@ jobs:
       - name: Cargo check
         working-directory: apps/desktop/src-tauri
         run: cargo check
+
+      - name: Cargo test
+        working-directory: apps/desktop/src-tauri
+        run: cargo test
