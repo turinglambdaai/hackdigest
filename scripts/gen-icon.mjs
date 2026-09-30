@@ -87,9 +87,9 @@ for (let y = 0; y < SIZE; y++) {
     if (plate > 0) {
       // "H" glyph from three bars (with soft edges via small SDFs on rects):
       const bars = [
-        [388, 482, 62, 236],
-        [636, 482, 62, 236],
-        [512, 482, 124, 40],
+        [388, 510, 62, 236],
+        [636, 510, 62, 236],
+        [512, 510, 124, 40],
       ];
       let glyph = 0;
       for (const [cx, cy, hw, hh] of bars) {
