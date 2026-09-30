@@ -18,7 +18,7 @@ import { openExternal } from '../lib/hooks';
 import { checkForUpdate, relaunchApp } from '../lib/updater';
 import ShortcutSettings from './ShortcutSettings';
 
-const APP_VERSION = '0.4.4';
+const APP_VERSION = '0.4.5';
 const REPO_URL = 'https://github.com/turinglambdaai/hackdigest';
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
