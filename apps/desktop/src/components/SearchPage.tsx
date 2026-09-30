@@ -20,6 +20,21 @@ const RANGE_SECONDS: Record<Range, number> = {
 
 const stripHtml = (s: string) => s.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
 
+// Exact word matching: Algolia's typo tolerance and stemming pull in noise
+// (racket -> rocket / racketeering). Filter hits to real word matches.
+const escapeReg = (w: string) => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+function makeWordMatchers(query: string): RegExp[] {
+  return query
+    .toLowerCase()
+    .split(/\s+/)
+    .filter((w) => w.length > 0)
+    .map((w) => new RegExp('\\b' + escapeReg(w) + 's?\\b', 'i'));
+}
+function hitMatches(h: AlgoliaHit, matchers: RegExp[], isComment: boolean): boolean {
+  const fields = isComment ? [h.comment_text, h.story_title] : [h.title, h.url];
+  return fields.some((f) => !!f && matchers.every((r) => r.test(f)));
+}
+
 export default function SearchPage({ query }: { query: string }) {
   const { t, lang } = useI18n();
   const navigate = useUI((s) => s.navigate);
@@ -48,7 +63,8 @@ export default function SearchPage({ query }: { query: string }) {
     setPage(0);
     searchHN(value, params())
       .then((r) => {
-        setHits(r.hits);
+        const m = makeWordMatchers(value);
+        setHits(r.hits.filter((h) => hitMatches(h, m, type === 'comment')));
         setMorePages(r.page + 1 < r.nbPages);
       })
       .catch((e: Error) => setError(e))
@@ -60,7 +76,8 @@ export default function SearchPage({ query }: { query: string }) {
     setRunning(true);
     searchHN(q.trim() || query, { ...params(), page: next })
       .then((r) => {
-        setHits((prev) => [...(prev ?? []), ...r.hits]);
+        const m = makeWordMatchers(q.trim() || query);
+        setHits((prev) => [...(prev ?? []), ...r.hits.filter((h) => hitMatches(h, m, type === 'comment'))]);
         setPage(next);
         setMorePages(r.page + 1 < r.nbPages);
       })
@@ -92,7 +109,8 @@ export default function SearchPage({ query }: { query: string }) {
       ...(min ? { minCreatedAt: Math.floor(Date.now() / 1000) - min } : {}),
     })
       .then((r) => {
-        setHits(r.hits);
+        const m = makeWordMatchers(q.trim() || query);
+        setHits(r.hits.filter((h) => hitMatches(h, m, type === 'comment')));
         setMorePages(r.page + 1 < r.nbPages);
       })
       .catch((e: Error) => setError(e))
