@@ -330,10 +330,6 @@ export default function StoryDetail({ id }: { id: number }) {
           </button>
         </div>
 
-        {autoMode && (
-          <div className="mt-2 text-xs text-accent">{t.autoFollowingNote}</div>
-        )}
-
         {digest != null && (
           <div className="prose-hn mt-5 rounded-xl border border-accent/30 bg-surface p-5 text-[14px]">
             <div className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-accent">
