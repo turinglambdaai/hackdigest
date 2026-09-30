@@ -33,9 +33,33 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_process::init())
+        .plugin(tauri_plugin_window_state::Builder::new().build())
         .setup(|app| match db::init(app.handle()) {
             Ok(sqlite) => {
                 app.manage(sqlite);
+
+                // Guard: if the restored window position landed outside every
+                // connected monitor (e.g. an external screen was unplugged),
+                // pull it back to center instead of stranding the title bar.
+                if let Some(win) = app.get_webview_window("main") {
+                    let stranded = win
+                        .available_monitors()
+                        .map(|mons| {
+                            let pos = win.outer_position().unwrap_or_default();
+                            mons.iter().any(|m| {
+                                let mp = m.position();
+                                let ms = m.size();
+                                pos.x + 120 > mp.x
+                                    && pos.x < mp.x + ms.width as i32
+                                    && pos.y + 40 > mp.y
+                                    && pos.y < mp.y + ms.height as i32
+                            })
+                        })
+                        .unwrap_or(false);
+                    if !stranded {
+                        let _ = win.center();
+                    }
+                }
                 Ok(())
             }
             Err(e) => Err(e.into()),
