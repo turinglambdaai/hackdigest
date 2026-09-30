@@ -43,6 +43,7 @@ export interface Settings {
   providerId: string; // preset id, '' when unset
   hostedStatus: HostedStatus | null; // cached activation/quota state
   shortcuts: Shortcuts;
+  autoTranslateOnScroll: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -54,6 +55,7 @@ export const DEFAULT_SETTINGS: Settings = {
   providerId: '',
   hostedStatus: null,
   shortcuts: DEFAULT_SHORTCUTS,
+  autoTranslateOnScroll: false,
 };
 
 function merge(raw: Partial<Settings> | null | undefined): Settings {

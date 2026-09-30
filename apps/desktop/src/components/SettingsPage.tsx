@@ -18,7 +18,7 @@ import { openExternal } from '../lib/hooks';
 import { checkForUpdate, relaunchApp } from '../lib/updater';
 import ShortcutSettings from './ShortcutSettings';
 
-const APP_VERSION = '0.4.1';
+const APP_VERSION = '0.4.2';
 const REPO_URL = 'https://github.com/turinglambdaai/hackdigest';
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -227,6 +227,14 @@ export default function SettingsPage() {
                 </div>
               </div>
             )}
+            <Row label={t.autoTranslateLabel}>
+              <button
+                className={`rounded-lg px-3 py-1.5 text-xs font-medium ${settings.autoTranslateOnScroll ? 'bg-accent text-white' : 'border border-line text-mute hover:text-ink'}`}
+                onClick={() => patch({ autoTranslateOnScroll: !settings.autoTranslateOnScroll })}
+              >
+                {settings.autoTranslateOnScroll ? t.on : t.off}
+              </button>
+            </Row>
             <Row label={t.targetLang}>
               <select className={inputCls} value={settings.translateTarget} onChange={(e) => patch({ translateTarget: e.target.value })}>
                 {TRANSLATE_TARGETS.map((l) => (

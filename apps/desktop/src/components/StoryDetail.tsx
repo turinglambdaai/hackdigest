@@ -38,8 +38,6 @@ export default function StoryDetail({ id }: { id: number }) {
   const [loadedParents, setLoadedParents] = useState<Set<number>>(new Set());
   const [commentsLoading, setCommentsLoading] = useState(false);
   const [translatingStory, setTranslatingStory] = useState(false);
-  const [translatingAll, setTranslatingAll] = useState(false);
-  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
   const [digest, setDigest] = useState<string | null>(null);
   const [digesting, setDigesting] = useState(false);
   const [bookmarked, setBookmarked] = useState(false);
@@ -52,8 +50,6 @@ export default function StoryDetail({ id }: { id: number }) {
     setLoadedParents(new Set());
     setDigest(null);
     setTranslatingStory(false);
-    setTranslatingAll(false);
-    setProgress(null);
     void isBookmarked(id).then((b) => alive && setBookmarked(b));
     void markRead(id);
     void fetchItem(id)
@@ -110,7 +106,7 @@ export default function StoryDetail({ id }: { id: number }) {
       } else if (e.key === sc.detailTranslate) {
         void translateStoryNow();
       } else if (e.key === sc.detailTranslateAll) {
-        void translateAllComments();
+        toggleAutoMode();
       } else if (e.key === sc.detailDigest) {
         void runDigest();
       }
@@ -143,34 +139,79 @@ export default function StoryDetail({ id }: { id: number }) {
     [roots, tree]
   );
 
-  const translateAllComments = async () => {
-    const cfg = requireLLM();
-    const visible = collectVisible(roots, tree, useTree.getState().collapsed);
-    if (!cfg || translatingAll || visible.length === 0) return;
+  // ---- Follow-scroll translation: viewport enters a queue, batches drain ----
+  const [autoMode, setAutoMode] = useState(false);
+  const [autoDone, setAutoDone] = useState(0);
+  const autoQueue = useRef<HNItem[]>([]);
+  const autoSeen = useRef<Set<number>>(new Set());
+  const autoRunning = useRef(false);
+  const autoAbort = useRef<AbortController | null>(null);
+
+  const pumpAuto = useCallback(async () => {
+    if (autoRunning.current || autoQueue.current.length === 0) return;
+    const cfg = llm;
+    if (!cfg) return;
+    autoRunning.current = true;
     const ac = new AbortController();
-    abortRef.current = ac;
-    setTranslatingAll(true);
-    setProgress({ done: 0, total: visible.length });
-    let result: { failed: number } = { failed: 0 };
+    autoAbort.current = ac;
     try {
-      result = await translateComments(
-        cfg,
-        visible,
-        target,
-        (batch, p) => {
-          for (const [cid, text] of batch) put(cid, { text });
-          setProgress(p);
-        },
-        ac.signal
-      );
-    } catch (e) {
-      if (!ac.signal.aborted) toast.error(e instanceof Error ? e.message : String(e));
+      while (autoQueue.current.length > 0 && !ac.signal.aborted) {
+        const batch = autoQueue.current.splice(0, autoQueue.current.length);
+        try {
+          const { failed } = await translateComments(
+            cfg,
+            batch,
+            target,
+            (results) => {
+              for (const [cid, text] of results) put(cid, { text });
+              setAutoDone((d) => d + results.size);
+            },
+            ac.signal
+          );
+          if (failed > 0 && !ac.signal.aborted) toast.error(t.someFailed.replace('{n}', String(failed)));
+        } catch (e) {
+          if (!ac.signal.aborted) toast.error(e instanceof Error ? e.message : String(e));
+        }
+      }
     } finally {
-      setTranslatingAll(false);
-      setProgress(null);
+      autoRunning.current = false;
     }
-    if (result.failed > 0) toast.error(t.someFailed.replace('{n}', String(result.failed)));
-  };
+  }, [llm, target, put, t]);
+
+  const enqueueVisible = useCallback(
+    (item: HNItem) => {
+      if (autoSeen.current.has(item.id)) return;
+      if (useTrans.getState().map[item.id]?.text) return; // already translated
+      autoSeen.current.add(item.id);
+      autoQueue.current.push(item);
+      void pumpAuto();
+    },
+    [pumpAuto]
+  );
+
+  const toggleAutoMode = useCallback(() => {
+    setAutoMode((on) => {
+      if (on) {
+        autoAbort.current?.abort();
+        autoQueue.current = [];
+      }
+      return !on;
+    });
+  }, []);
+
+  // Global setting: follow-scroll auto-translation without pressing anything.
+  const autoOnScroll = useSettings((s) => s.settings.autoTranslateOnScroll);
+  useEffect(() => {
+    if (autoOnScroll) setAutoMode(true);
+  }, [autoOnScroll]);
+
+  // New story: reset the follow state (mode itself persists).
+  useEffect(() => {
+    autoAbort.current?.abort();
+    autoQueue.current = [];
+    autoSeen.current = new Set();
+    setAutoDone(0);
+  }, [id]);
 
   const runDigest = async () => {
     const cfg = requireLLM();
@@ -262,13 +303,11 @@ export default function StoryDetail({ id }: { id: number }) {
           {comments.length > 0 && (
             <button
               title={t.translateVisibleHint}
-              className="flex items-center gap-1.5 rounded-lg border border-line bg-surface px-3 py-1.5 text-xs font-medium hover:bg-raised"
-              onClick={translateAllComments}
-              disabled={translatingAll}
+              className={autoMode ? 'flex items-center gap-1.5 rounded-lg border border-accent/40 bg-accentsoft px-3 py-1.5 text-xs font-medium text-accent hover:opacity-90' : 'flex items-center gap-1.5 rounded-lg border border-line bg-surface px-3 py-1.5 text-xs font-medium hover:bg-raised'}
+              onClick={toggleAutoMode}
             >
-              <IconTranslate className={translatingAll ? 'animate-pulse' : ''} width={13} height={13} />
-              {t.translateAll}
-              {progress ? ` (${progress.done}/${progress.total})` : ` (${visibleComments.length})`}
+              <IconTranslate className={autoMode ? 'animate-pulse' : ''} width={13} height={13} />
+              {autoMode ? `${t.autoFollowing} ${autoDone}` : `${t.translateAll} (${visibleComments.length})`}
             </button>
           )}
           {comments.length > 0 && (
@@ -291,8 +330,8 @@ export default function StoryDetail({ id }: { id: number }) {
           </button>
         </div>
 
-        {translatingAll && progress && (
-          <div className="mt-2 text-xs text-accent">{t.translatedProgress.replace('{done}', String(progress.done)).replace('{total}', String(progress.total))}</div>
+        {autoMode && (
+          <div className="mt-2 text-xs text-accent">{t.autoFollowingNote}</div>
         )}
 
         {digest != null && (
@@ -338,6 +377,8 @@ export default function StoryDetail({ id }: { id: number }) {
                   tree={tree}
                   kidsLoaded={loadedParents.has(c.id)}
                   onExpandKids={expandKids}
+                  autoActive={autoMode}
+                  onAutoVisible={enqueueVisible}
                 />
               ))}
             </div>

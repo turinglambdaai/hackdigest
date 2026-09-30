@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { sanitizeHtml, timeAgo, translateComments, type HNItem } from '@hackdigest/core';
 import { useI18n } from '../i18n';
 import { useSettings, useTrans, useTree, useUI } from '../state/store';
 import { IconTranslate, IconChevronDown } from './icons';
 import { toast } from './Toast';
+import { watchVisible } from '../lib/viewport';
 
 export function buildTree(comments: HNItem[]): Map<number, HNItem[]> {
   const byParent = new Map<number, HNItem[]>();
@@ -36,9 +37,11 @@ interface NodeProps {
   tree: Map<number, HNItem[]>;
   kidsLoaded: boolean;
   onExpandKids: (item: HNItem) => void;
+  autoActive?: boolean;
+  onAutoVisible?: (item: HNItem) => void;
 }
 
-export function CommentNode({ item, children, tree, kidsLoaded, onExpandKids }: NodeProps) {
+export function CommentNode({ item, children, tree, kidsLoaded, onExpandKids, autoActive, onAutoVisible }: NodeProps) {
   const { t, lang } = useI18n();
   const llm = useSettings((s) => s.settings.llm);
   const target = useSettings((s) => s.settings.translateTarget);
@@ -72,8 +75,18 @@ export function CommentNode({ item, children, tree, kidsLoaded, onExpandKids }: 
 
   const bodyHtml = trans?.text ? trans.text : item.text ?? '';
 
+  const nodeRef = useRef<HTMLDivElement>(null);
+  // Follow-scroll translation: watch this node while the mode is on and the
+  // comment is actually readable (expanded, not yet translated).
+  useEffect(() => {
+    if (!autoActive || !onAutoVisible || collapsed || trans?.text) return;
+    const el = nodeRef.current;
+    if (!el) return;
+    return watchVisible(el, () => onAutoVisible(item));
+  }, [autoActive, collapsed, trans?.text, item, onAutoVisible]);
+
   return (
-    <div className="group/node pt-2">
+    <div ref={nodeRef} className="group/node pt-2">
       <div className="flex items-center gap-2 text-xs text-mute">
         <button
           className="flex items-center gap-1 rounded px-1 py-0.5 hover:bg-raised"
@@ -127,6 +140,8 @@ export function CommentNode({ item, children, tree, kidsLoaded, onExpandKids }: 
                   tree={tree}
                   kidsLoaded={tree.has(c.id) || !c.kids?.length}
                   onExpandKids={onExpandKids}
+                  autoActive={autoActive}
+                  onAutoVisible={onAutoVisible}
                 />
               ))}
             </div>
