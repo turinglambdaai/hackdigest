@@ -59,9 +59,10 @@ export function CommentNode({ item, children, tree, kidsLoaded, onExpandKids }: 
     if (busy) return;
     setBusy(true);
     try {
-      await translateComments(llm, [item], target, (batch) => {
+      const { failed } = await translateComments(llm, [item], target, (batch) => {
         for (const [id, text] of batch) put(id, { text });
       });
+      if (failed > 0) toast.error(t.someFailed.replace('{n}', '1'));
     } catch {
       /* silent; retry button remains */
     } finally {

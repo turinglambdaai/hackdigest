@@ -75,7 +75,10 @@ async function translateBatch(
   lang: string,
   signal?: AbortSignal
 ): Promise<Map<number, string>> {
-  const list = comments.map((c) => `[${c.id}] ${c.text ?? ''}`).join('\n\n');
+  const MAX_CHARS = 1500; // per-comment input cap keeps outputs within max_tokens
+  const list = comments
+    .map((c) => `[${c.id}] ${(c.text ?? '').slice(0, MAX_CHARS)}`)
+    .join('\n\n');
   const sys = systemPrompt(lang);
   const user = [
     'Translate each Hacker News comment below into ' + langName(lang) + '. Keep the [id] markers and HTML tags intact; translate only text nodes. Keep proper nouns and code as-is.',
@@ -104,9 +107,10 @@ async function translateBatch(
 }
 
 /**
- * Translate a whole comment tree in batches of ~40, reporting progress.
- * Already-cached comments are skipped; each finished batch is flushed to
- * cache and surfaced via onBatch so the UI can render progressively.
+ * Translate a comment set with self-healing batches: a failing batch is
+ * bisected and retried (output-length limits and flaky JSON are the usual
+ * culprits), down to single comments. Returns how many comments ultimately
+ * failed — partial success always wins over aborting.
  */
 export async function translateComments(
   cfg: LLMConfig,
@@ -114,8 +118,7 @@ export async function translateComments(
   lang: string,
   onBatch?: (results: Map<number, string>, progress: CommentBatchResult) => void,
   signal?: AbortSignal
-): Promise<void> {
-  // Warm the cache in parallel chunks (serial per-item reads crawl on 1000+ threads).
+): Promise<{ failed: number }> {
   const pending: HNItem[] = [];
   const cachedMap = await getStoredTranslations(comments.map((c) => c.id), lang);
   for (const c of comments) {
@@ -123,32 +126,46 @@ export async function translateComments(
     if (hit?.text) onBatch?.(new Map([[c.id, hit.text]]), { done: 0, total: comments.length });
     else pending.push(c);
   }
-  const BATCH = 40;
-  const CONCURRENCY = 2; // batches in flight — ~2x faster without hammering rate limits
+  const BATCH = 20;
+  const CONCURRENCY = 2;
   let done = comments.length - pending.length;
+  let failed = 0;
   let cursor = 0;
-  let firstError: unknown = null;
-  const worker = async () => {
-    while (cursor < pending.length && !signal?.aborted && !firstError) {
-      const i = cursor++;
-      const slice = pending.slice(i, i + BATCH);
-      try {
-        const map = await translateBatch(cfg, slice, lang, signal);
-        await putStoredTranslations(
-          slice.filter((c) => map.has(c.id)).map((c) => ({ id: c.id, text: map.get(c.id)! })),
-          lang,
-          cfg.model
-        );
-        done += slice.length;
-        onBatch?.(map, { done, total: comments.length });
-      } catch (e) {
-        if (!signal?.aborted && firstError == null) firstError = e;
+
+  const runSlice = async (slice: HNItem[]): Promise<void> => {
+    try {
+      const map = await translateBatch(cfg, slice, lang, signal);
+      await putStoredTranslations(
+        slice.filter((c) => map.has(c.id)).map((c) => ({ id: c.id, text: map.get(c.id)! })),
+        lang,
+        cfg.model
+      );
+      done += slice.length;
+      onBatch?.(map, { done, total: comments.length });
+    } catch (e) {
+      if (signal?.aborted) return;
+      if (slice.length === 1) {
+        failed += 1;
+        done += 1;
+        onBatch?.(new Map(), { done, total: comments.length });
         return;
       }
+      // Bisect and retry both halves — one oversized comment must not
+      // take the whole batch down.
+      const mid = Math.ceil(slice.length / 2);
+      await runSlice(slice.slice(0, mid));
+      await runSlice(slice.slice(mid));
     }
   };
-  await Promise.all(Array.from({ length: Math.min(CONCURRENCY, Math.ceil(pending.length / BATCH)) }, worker));
-  if (firstError) throw firstError;
+
+  const worker = async () => {
+    while (cursor < pending.length && !signal?.aborted) {
+      const i = cursor++;
+      await runSlice(pending.slice(i, i + BATCH));
+    }
+  };
+  await Promise.all(Array.from({ length: Math.max(1, Math.min(CONCURRENCY, Math.ceil(pending.length / BATCH))) }, worker));
+  return { failed };
 }
 
 function systemPrompt(lang: string): string {

@@ -151,8 +151,9 @@ export default function StoryDetail({ id }: { id: number }) {
     abortRef.current = ac;
     setTranslatingAll(true);
     setProgress({ done: 0, total: visible.length });
+    let result: { failed: number } = { failed: 0 };
     try {
-      await translateComments(
+      result = await translateComments(
         cfg,
         visible,
         target,
@@ -168,6 +169,7 @@ export default function StoryDetail({ id }: { id: number }) {
       setTranslatingAll(false);
       setProgress(null);
     }
+    if (result.failed > 0) toast.error(t.someFailed.replace('{n}', String(result.failed)));
   };
 
   const runDigest = async () => {
