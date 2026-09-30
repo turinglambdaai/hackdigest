@@ -9,12 +9,17 @@ export interface AlgoliaHit {
   num_comments?: number;
   created_at: string; // ISO
   story_id?: number;
+  /** comment hits: the parent story title and the comment body (HTML). */
+  story_title?: string;
+  comment_text?: string;
 }
 
 export interface SearchOptions {
   page?: number;
   hitsPerPage?: number;
   tags?: string;
+  /** 'story' (default) or 'comment'. */
+  type?: 'story' | 'comment';
   /** 'relevance' (default) or 'date' = newest first. */
   sortBy?: 'relevance' | 'date';
   /** Only hits created after this unix timestamp (seconds). */
@@ -28,7 +33,7 @@ export async function searchHN(query: string, opts: SearchOptions = {}): Promise
 }> {
   const params = new URLSearchParams({
     query,
-    tags: opts.tags ?? 'story',
+    tags: opts.tags ?? (opts.type === 'comment' ? 'comment' : 'story'),
     page: String(opts.page ?? 0),
     hitsPerPage: String(opts.hitsPerPage ?? 30),
   });
