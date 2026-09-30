@@ -178,15 +178,26 @@ export default function StoryDetail({ id }: { id: number }) {
     }
   }, [llm, target, put, t]);
 
+  // Debounced pump: entries arriving together (a viewport's worth) merge
+  // into ONE translation batch instead of one request per comment.
+  const pumpTimer = useRef<number | null>(null);
+  const schedulePump = useCallback(() => {
+    if (pumpTimer.current != null) return;
+    pumpTimer.current = window.setTimeout(() => {
+      pumpTimer.current = null;
+      void pumpAuto();
+    }, 400);
+  }, [pumpAuto]);
+
   const enqueueVisible = useCallback(
     (item: HNItem) => {
       if (autoSeen.current.has(item.id)) return;
       if (useTrans.getState().map[item.id]?.text) return; // already translated
       autoSeen.current.add(item.id);
       autoQueue.current.push(item);
-      void pumpAuto();
+      schedulePump();
     },
-    [pumpAuto]
+    [schedulePump]
   );
 
   const toggleAutoMode = useCallback(() => {
@@ -194,6 +205,10 @@ export default function StoryDetail({ id }: { id: number }) {
       if (on) {
         autoAbort.current?.abort();
         autoQueue.current = [];
+        if (pumpTimer.current != null) {
+          clearTimeout(pumpTimer.current);
+          pumpTimer.current = null;
+        }
       }
       return !on;
     });
@@ -211,6 +226,10 @@ export default function StoryDetail({ id }: { id: number }) {
     autoQueue.current = [];
     autoSeen.current = new Set();
     setAutoDone(0);
+    if (pumpTimer.current != null) {
+      clearTimeout(pumpTimer.current);
+      pumpTimer.current = null;
+    }
   }, [id]);
 
   const runDigest = async () => {
