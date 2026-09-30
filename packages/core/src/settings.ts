@@ -44,6 +44,7 @@ export interface Settings {
   hostedStatus: HostedStatus | null; // cached activation/quota state
   shortcuts: Shortcuts;
   autoTranslateOnScroll: boolean;
+  autoTranslateTitles: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -56,6 +57,7 @@ export const DEFAULT_SETTINGS: Settings = {
   hostedStatus: null,
   shortcuts: DEFAULT_SHORTCUTS,
   autoTranslateOnScroll: false,
+  autoTranslateTitles: true,
 };
 
 function merge(raw: Partial<Settings> | null | undefined): Settings {

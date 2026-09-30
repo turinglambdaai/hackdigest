@@ -6,7 +6,7 @@ import { useI18n } from '../i18n';
 import { useUI } from '../state/store';
 import { useSentinel } from '../lib/hooks';
 import { isTypingTarget } from '../lib/keys';
-import { translateStory } from '@hackdigest/core';
+import { translateStory, translateTitles } from '@hackdigest/core';
 import { useSettings, useTrans } from '../state/store';
 import { listBookmarks, listReadIds, toggleBookmark, type BookmarkEntry } from '../lib/bookmarks';
 import StoryRow from './StoryRow';
@@ -26,6 +26,7 @@ export default function StoryList({ feed }: { feed: FeedId }) {
   const [sel, setSel] = useState(0);
   const llm = useSettings((st) => st.settings.llm);
   const sc = useSettings((st) => st.settings.shortcuts);
+  const autoTitles = useSettings((st) => st.settings.autoTranslateTitles);
   const target = useSettings((st) => st.settings.translateTarget);
   const put = useTrans((st) => st.put);
   const navigate = useUI((st) => st.navigate);
@@ -50,13 +51,26 @@ export default function StoryList({ feed }: { feed: FeedId }) {
     if (!ids) return;
     let alive = true;
     const slice = ids.slice(0, visible);
-    fetchItems(slice).then((got) => {
-      if (alive) setItems(got.filter((x): x is HNItem => x != null));
+    fetchItems(slice).then(async (got) => {
+      const fresh = got.filter((x): x is HNItem => x != null);
+      if (alive) setItems(fresh);
+      // Auto-translate this batch's titles (one request per 30 rows).
+      if (alive && autoTitles && llm) {
+        try {
+          await translateTitles(llm, fresh, target, (results) => {
+            for (const [id, title] of results) {
+              if (alive) put(id, { title });
+            }
+          });
+        } catch {
+          /* silent — rows keep English, hover/t still works */
+        }
+      }
     });
     return () => {
       alive = false;
     };
-  }, [ids, visible]);
+  }, [ids, visible, autoTitles, llm, target, put]);
 
 
   // HN-style keyboard navigation: j/k move, Enter/o open, s star, t translate, r refresh.

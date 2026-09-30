@@ -188,3 +188,69 @@ export function langName(lang: string): string {
 }
 
 export const TRANSLATE_TARGETS = ['zh', 'zh-TW', 'ja', 'ko', 'en'];
+
+/**
+ * Batch-translate story TITLES (feed page). Titles are tiny — 30 per request.
+ * Already-cached titles are returned immediately; results are persisted so
+ * revisiting a feed never re-bills.
+ */
+export async function translateTitles(
+  cfg: LLMConfig,
+  stories: HNItem[],
+  lang: string,
+  onDone?: (results: Map<number, string>) => void,
+  signal?: AbortSignal
+): Promise<void> {
+  const pending: HNItem[] = [];
+  const cached = await getStoredTranslations(stories.map((s) => s.id), lang);
+  const immediate = new Map<number, string>();
+  for (const s of stories) {
+    const hit = cached.get(s.id);
+    if (hit?.title && hit.title !== s.title) immediate.set(s.id, hit.title);
+    else pending.push(s);
+  }
+  if (immediate.size > 0) onDone?.(immediate);
+
+  const BATCH = 30;
+  for (let i = 0; i < pending.length; i += BATCH) {
+    if (signal?.aborted) return;
+    const slice = pending.slice(i, i + BATCH);
+    const list = slice.map((s) => `[${s.id}] ${s.title ?? ''}`).join('\n');
+    let map = new Map<number, string>();
+    for (let attempt = 0; ; attempt++) {
+      const raw = await chat(
+        cfg,
+        [
+          { role: 'system', content: systemPrompt(lang) },
+          {
+            role: 'user',
+            content:
+              'Translate each Hacker News story title below into ' +
+              langName(lang) +
+              '. Keep the [id] markers. Keep product/company names and technical terms recognizable.\nReturn JSON: {"t": {"<id>": "<translated title>"}}\n' +
+              list,
+          },
+        ],
+        { jsonMode: true, signal, maxTokens: 4000 }
+      );
+      try {
+        const j = extractJson(raw) as { t?: Record<string, string> };
+        for (const [k, v] of Object.entries(j.t ?? {})) {
+          const id = Number(k.replace(/[[]]/g, ''));
+          if (Number.isFinite(id) && typeof v === 'string' && v) map.set(id, v);
+        }
+        if (map.size > 0) break;
+        throw new Error('empty title map');
+      } catch (e) {
+        map = new Map();
+        if (attempt >= 1) throw e;
+      }
+    }
+    await putStoredTranslations(
+      slice.filter((s) => map.has(s.id)).map((s) => ({ id: s.id, title: map.get(s.id)! })),
+      lang,
+      cfg.model
+    );
+    onDone?.(map);
+  }
+}
