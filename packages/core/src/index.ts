@@ -8,6 +8,7 @@ export * from './storage';
 export * from './translate';
 export * from './digest';
 export * from './settings';
+export * from './bridge';
 export * from './store';
 export * from './sanitize';
 export * from './util';

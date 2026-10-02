@@ -1,7 +1,8 @@
-// Storage abstraction: packaged builds ride Rust/SQLite commands (the
-// WebView2 IndexedDB never persisted there); plain browsers keep IndexedDB.
+// Storage abstraction: the Glaze backend's SQLite store is the durable home
+// (mirrors the Tauri build: webview storage proved non-persistent there);
+// plain browsers keep IndexedDB. Wire shapes match the old Tauri commands.
 
-import { isTauri } from './llm';
+import { apiPost, hasBackend } from './bridge';
 import { kvGet, kvSet } from './store';
 
 export interface StoredTranslation {
@@ -11,15 +12,11 @@ export interface StoredTranslation {
 
 type TransRow = [number, string, string, string | null, string | null]; // itemId, lang, model, title, text
 
-async function invoke<T>(cmd: string, args?: Record<string, unknown>): Promise<T | null> {
-  const { invoke: inv } = await import('@tauri-apps/api/core');
-  return inv<T>(cmd, args);
-}
-
 export async function storageKvGet(key: string): Promise<string | null> {
-  if (isTauri()) {
+  if (await hasBackend()) {
     try {
-      return await invoke<string | null>('kv_get', { key });
+      const { value } = await apiPost<{ value: string | null }>('/api/kv/get', { key });
+      return value ?? null;
     } catch {
       return null;
     }
@@ -28,9 +25,9 @@ export async function storageKvGet(key: string): Promise<string | null> {
 }
 
 export async function storageKvSet(key: string, value: string): Promise<void> {
-  if (isTauri()) {
+  if (await hasBackend()) {
     try {
-      await invoke('kv_set', { key, value });
+      await apiPost('/api/kv/set', { key, value });
     } catch {
       /* fall through to IDB */
     }
@@ -40,13 +37,13 @@ export async function storageKvSet(key: string, value: string): Promise<void> {
 }
 
 export async function getStoredTranslation(itemId: number, lang: string): Promise<StoredTranslation | null> {
-  if (isTauri()) {
+  if (await hasBackend()) {
     try {
-      const row = await invoke<{ title: string | null; text: string | null } | null>('get_translation', {
-        itemId,
-        lang,
-      });
-      if (!row) return null;
+      const row = await apiPost<{ found: boolean; title: string | null; text: string | null }>(
+        '/api/translations/get',
+        { itemId, lang }
+      );
+      if (!row.found) return null;
       return { title: row.title ?? undefined, text: row.text ?? undefined };
     } catch {
       return null;
@@ -62,10 +59,10 @@ export async function putStoredTranslations(
   lang: string,
   model: string
 ): Promise<void> {
-  if (isTauri()) {
+  if (await hasBackend()) {
     try {
       const payload: TransRow[] = rows.map((r) => [r.id, lang, model, r.title ?? null, r.text ?? null]);
-      await invoke('put_translations', { rows: payload });
+      await apiPost('/api/translations/put', { rows: payload });
       return;
     } catch {
       /* fall through to IDB */
@@ -82,12 +79,12 @@ export async function getStoredTranslations(
 ): Promise<Map<number, StoredTranslation>> {
   const out = new Map<number, StoredTranslation>();
   if (itemIds.length === 0) return out;
-  if (isTauri()) {
+  if (await hasBackend()) {
     try {
-      const rows = await invoke<Array<[number, string | null, string | null]>>('get_translations', {
-        itemIds,
-        lang,
-      });
+      const { rows } = await apiPost<{ rows: Array<[number, string | null, string | null]> }>(
+        '/api/translations/get-batch',
+        { itemIds, lang }
+      );
       for (const [id, title, text] of rows ?? []) {
         out.set(id, { title: title ?? undefined, text: text ?? undefined });
       }
@@ -108,9 +105,9 @@ export async function getStoredTranslations(
 }
 
 export async function getStoredItem(id: number): Promise<unknown | null> {
-  if (isTauri()) {
+  if (await hasBackend()) {
     try {
-      const json = await invoke<string | null>('get_item', { id });
+      const { json } = await apiPost<{ json: string | null }>('/api/items/get', { id });
       return json ? JSON.parse(json) : null;
     } catch {
       return null;
@@ -120,10 +117,10 @@ export async function getStoredItem(id: number): Promise<unknown | null> {
 }
 
 export async function putStoredItems(items: Array<{ id: number }>): Promise<void> {
-  if (isTauri()) {
+  if (await hasBackend()) {
     try {
       const payload = items.map((it) => [it.id, JSON.stringify(it)] as [number, string]);
-      await invoke('put_items', { items: payload });
+      await apiPost('/api/items/put', { items: payload });
       return;
     } catch {
       /* fall through */

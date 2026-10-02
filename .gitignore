@@ -20,3 +20,6 @@ Thumbs.db
 
 # Updater signing keys — NEVER commit (backup outside the repo!)
 updater-keys/
+
+# Racket compiled caches
+compiled/

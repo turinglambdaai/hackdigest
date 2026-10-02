@@ -5,8 +5,8 @@
 import type { LLMConfig } from './llm';
 import type { HostedStatus } from './hosted';
 import { kvGet, kvSet } from './store';
-import { isTauri } from './llm';
 import { readDataFile, writeDataFile } from './dataFile';
+import { hasBackend } from './bridge';
 
 export interface Shortcuts {
   listNext: string;
@@ -65,7 +65,7 @@ function merge(raw: Partial<Settings> | null | undefined): Settings {
 }
 
 export async function loadSettings(): Promise<Settings> {
-  if (isTauri()) {
+  if (await hasBackend()) {
     // File is the source of truth in packaged builds.
     const fromFile = await readDataFile<Partial<Settings>>('settings');
     if (fromFile) return merge(fromFile);
@@ -80,7 +80,7 @@ export async function loadSettings(): Promise<Settings> {
 }
 
 export async function saveSettings(s: Settings): Promise<void> {
-  if (isTauri()) {
+  if (await hasBackend()) {
     await writeDataFile('settings', s);
     void kvSet('meta', 'settings', s); // best effort, dev convenience
     return;

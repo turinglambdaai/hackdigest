@@ -15,7 +15,7 @@ import {
 import { useI18n } from '../i18n';
 import { useSettings, useTrans } from '../state/store';
 import { openExternal } from '../lib/hooks';
-import { checkForUpdate, relaunchApp } from '../lib/updater';
+import { checkForUpdate } from '../lib/updater';
 import ShortcutSettings from './ShortcutSettings';
 
 const APP_VERSION = '0.5.1';
@@ -50,7 +50,7 @@ export default function SettingsPage() {
   const [testState, setTestState] = useState<'idle' | 'running' | 'ok' | 'fail'>('idle');
   const [testMsg, setTestMsg] = useState('');
   const [cacheCleared, setCacheCleared] = useState(false);
-  const [updateState, setUpdateState] = useState<'idle' | 'checking' | 'none' | 'downloading' | 'error'>('idle');
+  const [updateState, setUpdateState] = useState<'idle' | 'checking' | 'none' | 'found' | 'error'>('idle');
   const [hostedBusy, setHostedBusy] = useState(false);
   const [hostedMsg, setHostedMsg] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
 
@@ -312,7 +312,7 @@ export default function SettingsPage() {
         <div className="mb-3 flex items-center gap-3">
           <button
             className="rounded-lg bg-accent px-3 py-1.5 text-xs font-medium text-white hover:opacity-90 disabled:opacity-50"
-            disabled={updateState === 'checking' || updateState === 'downloading'}
+            disabled={updateState === 'checking' || updateState === 'found'}
             onClick={async () => {
               setUpdateState('checking');
               try {
@@ -321,15 +321,14 @@ export default function SettingsPage() {
                   setUpdateState('none');
                   return;
                 }
-                setUpdateState('downloading');
-                await update.downloadAndInstall();
-                await relaunchApp();
+                setUpdateState('found');
+                await openExternal(update.url);
               } catch {
                 setUpdateState('error');
               }
             }}
           >
-            {updateState === 'downloading' ? t.updateNow : t.checkUpdate}
+            {updateState === 'found' ? t.updateNow : t.checkUpdate}
           </button>
           {updateState === 'none' && <span className="text-xs text-green-600 dark:text-green-400">{t.upToDate}</span>}
           {updateState === 'error' && <span className="text-xs text-red-600 dark:text-red-400">{t.updateFailed}</span>}

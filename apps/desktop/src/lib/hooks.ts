@@ -1,15 +1,22 @@
 // Shared hooks: external link opening, async state.
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { isTauri } from '@hackdigest/core';
+import { hasBackend } from '@hackdigest/core';
 
 export async function openExternal(url: string): Promise<void> {
-  if (isTauri()) {
-    const { openUrl } = await import('@tauri-apps/plugin-opener');
-    await openUrl(url);
-  } else {
-    window.open(url, '_blank', 'noopener,noreferrer');
+  if (await hasBackend()) {
+    try {
+      await fetch('/api/open', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url }),
+      });
+      return;
+    } catch {
+      /* fall through to window.open */
+    }
   }
+  window.open(url, '_blank', 'noopener,noreferrer');
 }
 
 export interface Async<T> {

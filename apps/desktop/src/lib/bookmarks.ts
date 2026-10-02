@@ -1,8 +1,8 @@
 // Bookmarks & read history. In packaged builds these live in library.json
 // (app-config dir, survives updates); in plain browsers, IndexedDB.
 
-import { idbAll, idbDel, idbGet, idbSet } from '@hackdigest/core';
-import { isTauri, readDataFile, writeDataFile } from '@hackdigest/core';
+import { hasBackend, idbAll, idbDel, idbSet } from '@hackdigest/core';
+import { readDataFile, writeDataFile } from '@hackdigest/core';
 
 export interface BookmarkEntry {
   id: number;
@@ -24,7 +24,7 @@ const EMPTY: Library = { bookmarks: [], history: [] };
 async function loadLibrary(): Promise<Library> {
   const fromFile = await readDataFile<Library>('library');
   if (fromFile) return { ...EMPTY, ...fromFile };
-  if (!isTauri()) {
+  if (!(await hasBackend())) {
     // Browser dev: migrate/adopt IndexedDB data.
     const [b, h] = await Promise.all([
       idbAll<BookmarkEntry>('bookmarks'),
@@ -54,7 +54,7 @@ export async function toggleBookmark(id: number): Promise<boolean> {
   const exists = lib.bookmarks.some((e) => e.id === id);
   lib.bookmarks = exists ? lib.bookmarks.filter((e) => e.id !== id) : [...lib.bookmarks, { id, ts: Date.now() }];
   await saveLibrary(lib);
-  if (!isTauri()) await idbDel('bookmarks', id).catch(() => {});
+  if (!(await hasBackend())) await idbDel('bookmarks', id).catch(() => {});
   return !exists;
 }
 
@@ -67,5 +67,5 @@ export async function markRead(id: number): Promise<void> {
   if (lib.history.some((e) => e.id === id)) return;
   lib.history = [...lib.history.slice(-4999), { id, ts: Date.now() }];
   await saveLibrary(lib);
-  if (!isTauri()) await idbSet('history', id, { id, ts: Date.now() }).catch(() => {});
+  if (!(await hasBackend())) await idbSet('history', id, { id, ts: Date.now() }).catch(() => {});
 }

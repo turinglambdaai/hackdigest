@@ -1,29 +1,24 @@
-// Top banner: a new version is available → one click download + install + relaunch.
+// Top banner: a new version is available → jump to the release page.
+// R1 of the Glaze migration has no in-place installer (backend #17 scope);
+// the full download/install chain returns in R3 (docs/GLAZE-MIGRATION.md).
 
 import { useState } from 'react';
 import { useI18n } from '../i18n';
-import { checkForUpdate, relaunchApp, type UpdateInfo } from '../lib/updater';
+import { openExternal } from '../lib/hooks';
+import { checkForUpdate, type UpdateInfo } from '../lib/updater';
 import { IconRefresh } from './icons';
-
-type Phase = 'idle' | 'downloading' | 'ready' | 'error';
 
 export default function UpdateBanner({ update, onClose }: { update: UpdateInfo | null; onClose: () => void }) {
   const { t } = useI18n();
-  const [phase, setPhase] = useState<Phase>('idle');
-  const [progress, setProgress] = useState('');
+  const [opening, setOpening] = useState(false);
   if (!update) return null;
 
-  const run = async () => {
-    setPhase('downloading');
+  const open = async () => {
+    setOpening(true);
     try {
-      await update.downloadAndInstall((p) => {
-        const mb = (n: number) => `${(n / 1048576).toFixed(1)} MB`;
-        setProgress(p.total ? `${mb(p.downloaded)} / ${mb(p.total)}` : mb(p.downloaded));
-      });
-      setPhase('ready');
-      await relaunchApp();
-    } catch {
-      setPhase('error');
+      await openExternal(update.url);
+    } finally {
+      setOpening(false);
     }
   };
 
@@ -33,13 +28,13 @@ export default function UpdateBanner({ update, onClose }: { update: UpdateInfo |
       <span>
         {t.updateAvailable}: <strong>v{update.version}</strong>
       </span>
-      {phase === 'downloading' && <span className="text-mute">{progress}…</span>}
-      {phase === 'error' && <span className="text-red-600 dark:text-red-400">{t.updateFailed}</span>}
-      {phase !== 'downloading' && phase !== 'ready' && (
-        <button className="ml-1 rounded-md bg-accent px-2 py-0.5 font-medium text-white hover:opacity-90" onClick={run}>
-          {t.updateNow}
-        </button>
-      )}
+      <button
+        className="ml-1 rounded-md bg-accent px-2 py-0.5 font-medium text-white hover:opacity-90 disabled:opacity-60"
+        onClick={open}
+        disabled={opening}
+      >
+        {t.updateNow}
+      </button>
       <button className="ml-auto rounded-md px-1.5 py-0.5 text-mute hover:text-ink" onClick={onClose}>
         ✕
       </button>

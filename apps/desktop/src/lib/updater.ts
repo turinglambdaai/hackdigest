@@ -1,42 +1,27 @@
-// Auto-update via tauri-plugin-updater (silent check, banner-driven install).
+// Auto-update via the Glaze backend (silent check, banner-driven). R1 is
+// detection + jump to the release page; in-place install returns in R3
+// (docs/GLAZE-MIGRATION.md).
 
-import { isTauri } from '@hackdigest/core';
+import { apiPost } from '@hackdigest/core';
 
 export interface UpdateInfo {
   version: string;
   body?: string;
-  downloadAndInstall: (onProgress?: (p: { downloaded: number; total: number | null }) => void) => Promise<void>;
+  /** Release page to open in the browser. */
+  url: string;
 }
 
 export async function checkForUpdate(): Promise<UpdateInfo | null> {
-  if (!isTauri()) return null;
-  const { check } = await import('@tauri-apps/plugin-updater');
-  const update = await check();
-  if (!update) return null;
-  return {
-    version: update.version,
-    body: update.body ?? undefined,
-    downloadAndInstall: async (onProgress) => {
-      let downloaded = 0;
-      let total: number | null = null;
-      await update.downloadAndInstall((event) => {
-        switch (event.event) {
-          case 'Started':
-            total = event.data.contentLength ?? null;
-            break;
-          case 'Progress':
-            downloaded += event.data.chunkLength;
-            break;
-          case 'Finished':
-            break;
-        }
-        onProgress?.({ downloaded, total });
-      });
-    },
-  };
+  try {
+    const { update } = await apiPost<{ update: UpdateInfo | null }>('/api/update/check');
+    return update ?? null;
+  } catch {
+    return null;
+  }
 }
 
 export async function relaunchApp(): Promise<void> {
-  const { relaunch } = await import('@tauri-apps/plugin-process');
-  await relaunch();
+  // Legacy name kept for the banner import; R1 has no in-place relaunch.
+  // Opening the release page is handled by UpdateBanner via openExternal.
+  throw new Error('relaunch not supported in R1');
 }
