@@ -8,7 +8,7 @@
 ;; Run:  pnpm --filter @hackdigest/desktop build:vite   (once)
 ;;       racket backend/main.rkt
 
-(require glaze
+(require (except-in glaze app-data-dir)  ; ours (platform.rkt) keeps the Tauri-compatible layout
          json
          racket/contract
          racket/file
@@ -27,9 +27,9 @@
          "translate.rkt"
          "update-check.rkt")
 
-;; Keep in sync with tauri.conf.json / package.json at release time
-;; (scripts/check-release-version.sh guards the tagged build).
-(define app-version "0.5.1")
+;; Keep in sync with package.json and CHANGELOG.md; the release workflow's
+;; validate job fails the tag if they disagree.
+(define app-version "1.0.0")
 
 (define-runtime-path frontend-dist "../apps/desktop/dist")
 
