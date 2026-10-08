@@ -87,3 +87,57 @@ export async function streamChat(
   if (!statusDone) throw new Error('stream ended before status line');
   return full;
 }
+
+/**
+ * Stream a POST endpoint that answers ndjson: first line `OK` or
+ * `ERR <status> <message>`, then one JSON object per line. onLine fires as
+ * each complete line arrives.
+ */
+export async function streamLines(
+  path: string,
+  body: unknown,
+  onLine: (line: string) => void,
+  signal?: AbortSignal
+): Promise<void> {
+  const res = await fetch(path, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+    signal,
+  });
+  if (!res.ok || !res.body) {
+    const detail = await res.text().catch(() => '');
+    throw new Error(`${res.status} ${res.statusText}${detail ? ` — ${detail}` : ''}`);
+  }
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buf = '';
+  let statusDone = false;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buf += decoder.decode(value, { stream: true });
+    for (;;) {
+      if (!statusDone) {
+        const nl = buf.indexOf('\n');
+        if (nl === -1) break;
+        const status = buf.slice(0, nl);
+        buf = buf.slice(nl + 1);
+        statusDone = true;
+        if (status.startsWith('ERR')) {
+          const msg = status.slice(3).trim();
+          const m = msg.match(/^(\d+)\s?(.*)$/);
+          throw new Error(m && m[2] ? m[2] : msg || 'request failed');
+        }
+        continue;
+      }
+      const nl = buf.indexOf('\n');
+      if (nl === -1) break;
+      const line = buf.slice(0, nl).trim();
+      buf = buf.slice(nl + 1);
+      if (line) onLine(line);
+    }
+  }
+  if (buf.trim() && statusDone) onLine(buf.trim());
+  if (!statusDone) throw new Error('stream ended before status line');
+}

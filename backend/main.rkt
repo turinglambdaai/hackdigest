@@ -9,8 +9,10 @@
 ;;       racket backend/main.rkt
 
 (require glaze
+         json
          racket/contract
          racket/file
+         racket/format
          racket/list
          racket/match
          racket/path
@@ -22,6 +24,7 @@
          "migrate.rkt"
          "platform.rkt"
          "settings-rpc.rkt"
+         "translate.rkt"
          "update-check.rkt")
 
 ;; Keep in sync with tauri.conf.json / package.json at release time
@@ -62,6 +65,40 @@
 (define (jsexpr->items items)
   (for/list ([it (in-list items)])
     (match it [(list id json) (list id json)])))
+
+;; Stream a digest: OK line + raw markdown deltas (same wire protocol as
+;; api/llm/chat/stream, prompts built server-side by backend/translate.rkt).
+(define (digest-stream cfg prompts max-tokens)
+  (streaming-response
+   (lambda (out)
+     (define wrote-status? #f)
+     (define (status-ok!)
+       (unless wrote-status?
+         (set! wrote-status? #t)
+         (display "OK\n" out)
+         (flush-output out)))
+     (with-handlers
+         ([exn:llm?
+           (lambda (e)
+             (unless wrote-status?
+               (fprintf out "ERR ~a ~a\n"
+                        (or (llm-error-status e) 0)
+                        (string-replace (exn-message e) "\n" " "))
+               (flush-output out)))]
+          [exn:fail?
+           (lambda (e)
+             (unless wrote-status?
+               (fprintf out "ERR 0 ~a\n" (string-replace (exn-message e) "\n" " "))
+               (flush-output out)))])
+       (chat cfg
+             (list (cons 'system (car prompts)) (cons 'user (cdr prompts)))
+             #:max-tokens max-tokens
+             #:on-delta (lambda (delta)
+                          (status-ok!)
+                          (display delta out)
+                          (flush-output out)))
+       (status-ok!)))
+   #:mime #"text/plain; charset=utf-8"))
 
 ;; ---- routes ----------------------------------------------------------------
 
@@ -109,17 +146,15 @@
 
   [(POST "api/data/read")
    (data-read [name string?])
-   (hasheq 'json
-           (nullable
-            (if (string=? name "settings")
-                (let ([raw (read-data-file "settings")])
-                  (if raw
-                      (jsexpr->string
-                       (mask-settings-jsexpr!
-                        (with-handlers ([exn:fail? (lambda (_) (hasheq))])
-                          (read-json (open-input-string raw)))))
-                      raw))
-                (read-data-file name))))
+   (define raw (read-data-file name))
+   (define masked-json
+     (if (and (string=? name "settings") raw)
+         (jsexpr->string
+          (mask-settings-jsexpr!
+           (with-handlers ([exn:fail? (lambda (_) (hasheq))])
+             (read-json (open-input-string raw)))))
+         raw))
+   (hasheq 'json (nullable masked-json))]
 
   [(POST "api/data/write")
    (data-write [name string?] [json string?])
@@ -190,6 +225,93 @@
                 (status-ok!)
                 (display delta out)
                 (flush-output out)))
+        (status-ok!)))
+    #:mime #"text/plain; charset=utf-8")]
+
+  ;; ---- R2: translation orchestration lives server-side ----
+
+  [(POST "api/translate/story")
+   (translate-story-r [cfg hash?] [story hash?] [lang string?])
+   (define r (translate-story (current-db) (resolve-llm-config (jsexpr->cfg cfg)) story lang))
+   (hasheq 'title (hash-ref r 'title "") 'text (hash-ref r 'text ""))]
+
+  [(POST "api/translate/titles")
+   (translate-titles-r [cfg hash?] [stories list?] [lang string?])
+   (define map (translate-titles (current-db) (resolve-llm-config (jsexpr->cfg cfg)) stories lang))
+   ;; integer-keyed hashes are not jsexpr — pairs on the wire
+   (hasheq 'pairs (for/list ([(k v) (in-hash map)]) (list k v)))]
+
+  ;; ndjson progress: OK line, then one {"batch":{id:text},"done":N,"total":M}
+  ;; line per completed batch, finally {"failed":K}
+  [(POST "api/translate/comments")
+   (translate-comments-r [cfg hash?] [comments list?] [lang string?])
+   (define the-cfg (resolve-llm-config (jsexpr->cfg cfg)))
+   (define items
+     (for/list ([c (in-list comments)])
+       (cons (hash-ref c 'id) (hash-ref c 'text ""))))
+   (streaming-response
+    (lambda (out)
+      (display "OK\n" out)
+      (flush-output out)
+      (define failed
+        (translate-comments (current-db) the-cfg items lang
+                            (lambda (batch done total)
+                              (define line
+                                (jsexpr->string
+                                 (hasheq 'batch (for/hash ([(k v) (in-hash batch)]) (values (~a k) v))
+                                         'done done
+                                         'total total)))
+                              (display line out) (display "\n" out) (flush-output out))))
+      (display (jsexpr->string (hasheq 'failed failed)) out)
+      (display "\n" out)
+      (flush-output out))
+    #:mime #"application/x-ndjson")]
+
+  [(POST "api/digest/thread")
+   (digest-thread-r [cfg hash?] [story hash?] [comments list?] [lang string?])
+   (digest-stream (resolve-llm-config (jsexpr->cfg cfg))
+                  (thread-prompts story comments lang) 2000)]
+
+  [(POST "api/digest/tldr")
+   (digest-tldr-r [cfg hash?] [story hash?] [lang string?])
+   (digest-stream (resolve-llm-config (jsexpr->cfg cfg))
+                  (tldr-prompts story lang) 800)]
+
+  [(POST "api/digest/daily")
+   (digest-daily-r [cfg hash?] [stories list?] [lang string?] [date string?])
+   (define the-cfg (resolve-llm-config (jsexpr->cfg cfg)))
+   (streaming-response
+    (lambda (out)
+      (define wrote-status? #f)
+      (define (status-ok!)
+        (unless wrote-status?
+          (set! wrote-status? #t)
+          (display "OK\n" out)
+          (flush-output out)))
+      (with-handlers
+          ([exn:llm?
+            (lambda (e)
+              (unless wrote-status?
+                (fprintf out "ERR ~a ~a\n"
+                         (or (llm-error-status e) 0)
+                         (string-replace (exn-message e) "\n" " "))
+                (flush-output out)))]
+           [exn:fail?
+            (lambda (e)
+              (unless wrote-status?
+                (fprintf out "ERR 0 ~a\n" (string-replace (exn-message e) "\n" " "))
+                (flush-output out)))])
+        (define full
+          (chat the-cfg
+                (list (cons 'system (car (daily-prompts stories date lang)))
+                      (cons 'user (cdr (daily-prompts stories date lang))))
+                #:max-tokens 3000
+                #:on-delta (lambda (delta)
+                             (status-ok!)
+                             (display delta out)
+                             (flush-output out))))
+        ;; cache the daily digest with the same kv key layout digest.ts used
+        (kv-set! (current-db) (string-append "daily:" date ":" lang) full)
         (status-ok!)))
     #:mime #"text/plain; charset=utf-8")]
 
