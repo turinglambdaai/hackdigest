@@ -2,9 +2,9 @@
 
 把 Hacker News 读成中文 —— 为「看得懂英文、但读不痛快」的开发者做的 HN 阅读器。
 
+[![CI](https://github.com/turinglambdaai/hackdigest/actions/workflows/ci.yml/badge.svg)](https://github.com/turinglambdaai/hackdigest/actions/workflows/ci.yml) [![License](https://img.shields.io/badge/license-AGPL--3.0-blue)](LICENSE)
 [English](README.md) · **中文**
 
-[![License](https://img.shields.io/badge/license-AGPL--3.0-blue)](LICENSE) [![CI](https://github.com/turinglambdaai/hackdigest/actions/workflows/ci.yml/badge.svg)](https://github.com/turinglambdaai/hackdigest/actions/workflows/ci.yml)
 
 Hacker News 大概是互联网上最好的技术首页 —— 但对数以百万计的开发者来说，它也是一堵英文墙。HackDigest 拆掉这堵墙：每一条新闻、每一篇原文、每一个评论楼，按需翻译、按需总结。
 
