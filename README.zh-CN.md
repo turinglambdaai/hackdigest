@@ -2,27 +2,10 @@
 
 把 Hacker News 读成中文 —— 为「看得懂英文、但读不痛快」的开发者做的 HN 阅读器。
 
+[![CI](https://github.com/turinglambdaai/hackdigest/actions/workflows/ci.yml/badge.svg)](https://github.com/turinglambdaai/hackdigest/actions/workflows/ci.yml) [![License](https://img.shields.io/badge/license-AGPL--3.0-blue)](LICENSE)
+
 [English](README.md) · **中文**
 
-[![License](https://img.shields.io/badge/license-AGPL--3.0-blue)](LICENSE) [![CI](https://github.com/turinglambdaai/hackdigest/actions/workflows/ci.yml/badge.svg)](https://github.com/turinglambdaai/hackdigest/actions/workflows/ci.yml)
-
-Hacker News 大概是互联网上最好的技术首页 —— 但对数以百万计的开发者来说，它也是一堵英文墙。HackDigest 拆掉这堵墙：每一条新闻、每一篇原文、每一个评论楼，按需翻译、按需总结。
-
-## 下载
-
-从 [GitHub Releases](https://github.com/turinglambdaai/hackdigest/releases) 获取最新版本：
-
-| 平台 | 产物 |
-|---|---|
-| Windows 10/11 | `.msi` 安装包（早期版本未签名，见下） |
-| macOS（Apple Silicon） | `.dmg` |
-| Linux | `.deb` / `.AppImage` |
-
-> Windows SmartScreen 可能对未签名构建告警。所有构建由本仓库 CI 从打 tag 的提交产出；代码签名证书在 Phase 2 计划内。
->
-> macOS 首次启动：右键 → 打开（早期版本未公证）。
-
-翻译与 Digest 需要一个大模型 API Key —— 在设置里填一个（GLM、DeepSeek、通义、Kimi、OpenAI，或本地 Ollama，均为 OpenAI 兼容接口）。
 
 **内置自动更新**（v0.1.1 起）：应用启动时检查 GitHub Releases，发现新版本横幅提示、一键完成签名校验与更新 —— 无需再手动下载安装包。
 
