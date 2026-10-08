@@ -7,6 +7,22 @@ English comfortably enough to enjoy HN raw.
 
 **English** · [中文](README.zh-CN.md)
 
+Hacker News is arguably the best tech front page on the internet — and for
+hundreds of millions of developers, a wall of English. HackDigest tears that
+wall down: every story, article TL;DR, and comment thread, translated and
+digested on demand.
+
+## Download
+
+Grab the latest release for your platform from
+[GitHub Releases](https://github.com/turinglambdaai/hackdigest/releases):
+
+| Platform | Artifact |
+|---|---|
+| Windows 10/11 | `.msi` installer (unsigned in early builds — see below) |
+| macOS (Apple Silicon) | `.dmg` |
+| Linux | `.deb` / `.AppImage` |
+
 > Windows SmartScreen may warn on unsigned builds. The builds are produced by
 > this repository's CI from tagged commits; a code-signing certificate is on
 > the Phase 2 list.
@@ -16,8 +32,9 @@ English comfortably enough to enjoy HN raw.
 Translation and digests need an LLM API key — set one in Settings (GLM,
 DeepSeek, Qwen, Kimi, OpenAI, or a local Ollama; all OpenAI-compatible).
 
-The app checks GitHub Releases on startup and tells you when a new version
-is out (the one-click updater returns with the first Glaze-line release).
+**Auto-update is built in** (since v0.1.1): the app checks GitHub Releases on
+startup and offers a one-click, signature-verified update — no re-downloading
+installers by hand.
 
 ## Keyboard-first
 
@@ -60,8 +77,8 @@ own key and nothing here applies — that path is free and unlimited, forever.
 
 ## Roadmap
 
-- **Phase 1 — Desktop MVP** ✅ (v0.1.x, Tauri line): HN feeds and threads with
-  a reading experience worth opening daily; translation and digests via BYOK.
+- **Phase 1 — Desktop MVP** ✅ (v0.1.x): HN feeds and threads with a reading
+  experience worth opening daily; translation and digests via BYOK; auto-update.
 - **Phase 2 — Hosted Pro service** (v0.2.0): managed translation behind a
   license key — no setup, no keys. 7-day free trial per device, generous daily
   quotas, globally shared caches. Soft launch; sales start manual (lifetime /
@@ -71,12 +88,10 @@ own key and nothing here applies — that path is free and unlimited, forever.
 
 ## Tech stack
 
-**Glaze (Racket backend) + React + TypeScript**, one repo, `backend/` +
-`apps/desktop/` + `packages/core` (HackDigest is a content app — story
-pages, rich comment trees, typeset text — and for content the web rendering
-engine is the best text engine available; the app shell, storage, LLM proxy,
-and update checks live in a Racket backend served through
-[Glaze](https://github.com/turinglambdaai/glaze)).
+**Tauri 2 + React + TypeScript**, one repo, `apps/<platform>` + `packages/core`
+(the pattern Taskly settled on, with a web stack — HackDigest is a content
+app: story pages, rich comment trees, typeset text, and for content the web
+rendering engine is the best text engine available).
 
 - `packages/core` — pure TypeScript, runs everywhere: HN API client (official
   Firebase API + Algolia search), translation pipeline, digest prompting, and
@@ -84,21 +99,20 @@ and update checks live in a Racket backend served through
   OpenAI, Claude …) so mainland users can plug in a domestically reachable API.
 - Frontend — React + Vite + zustand + Tailwind 4; progressively-loaded
   feeds and comment trees, light/dark.
-- Storage — SQLite + JSON files in the Racket backend's app-data dir:
-  bookmarks, history, and a translation cache — a translated thread is never
-  billed twice. BYOK API keys stay in the backend; the page never sees them.
-- Network — LLM calls proxy through the backend (streaming included); HN
+- Storage — IndexedDB (built into the webview, zero plugins): bookmarks,
+  history, and a translation cache — a translated thread is never billed twice.
+- Network — LLM calls ride the Tauri plugin HTTP layer (no webview CORS); HN
   data comes straight from the official
   [Hacker News API](https://github.com/HackerNews/API) and Algolia search —
-  no scraping.
-- Updates — release checks against GitHub Releases from the backend.
+  no scraping, no backend required for BYOK.
+- Updates — Tauri updater against GitHub Releases (minisign-signed); no
+  app-store gatekeeper on desktop.
 
 ## Repo layout
 
 ```
 hackdigest/
-├── backend/          Racket backend on Glaze: storage, LLM proxy, app shell
-├── apps/desktop/     React frontend (built to dist/, served by the backend)
+├── apps/desktop/     Tauri 2 desktop app (Windows / macOS / Linux)
 ├── apps/mobile/      Phase 3
 ├── packages/core/    shared TypeScript core: HN API, translation, digests
 └── docs/
