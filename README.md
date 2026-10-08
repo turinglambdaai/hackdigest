@@ -16,9 +16,8 @@ English comfortably enough to enjoy HN raw.
 Translation and digests need an LLM API key — set one in Settings (GLM,
 DeepSeek, Qwen, Kimi, OpenAI, or a local Ollama; all OpenAI-compatible).
 
-**Auto-update is built in** (since v0.1.1): the app checks GitHub Releases on
-startup and offers a one-click, signature-verified update — no re-downloading
-installers by hand.
+The app checks GitHub Releases on startup and tells you when a new version
+is out (the one-click updater returns with the first Glaze-line release).
 
 ## Keyboard-first
 
@@ -61,8 +60,8 @@ own key and nothing here applies — that path is free and unlimited, forever.
 
 ## Roadmap
 
-- **Phase 1 — Desktop MVP** ✅ (v0.1.x): HN feeds and threads with a reading
-  experience worth opening daily; translation and digests via BYOK; auto-update.
+- **Phase 1 — Desktop MVP** ✅ (v0.1.x, Tauri line): HN feeds and threads with
+  a reading experience worth opening daily; translation and digests via BYOK.
 - **Phase 2 — Hosted Pro service** (v0.2.0): managed translation behind a
   license key — no setup, no keys. 7-day free trial per device, generous daily
   quotas, globally shared caches. Soft launch; sales start manual (lifetime /
