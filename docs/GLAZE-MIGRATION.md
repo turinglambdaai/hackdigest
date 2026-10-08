@@ -71,7 +71,9 @@ Tauri 版是应用内下载安装重启；glaze #17 当前范围止步于探测�
 - **R2**：`translate/digest` 编排移入 Racket（batch 自愈二分重试下沉）；
   settings 中 apiKey 改为只写不回读（表单显示掩码）。
 - **R3**：打包分发（`raco glaze build` 三平台 bundle；Windows 安装器按
-  glaze#20/#22 路线接 Inno/NSIS）+ 完整更新链路；移除 `src-tauri/`。
+  glaze#20/#22 路线接 Inno/NSIS）+ 完整更新链路 + 新 release workflow。
+  （`src-tauri/` 已提前于 2026-10-02 移除——Tauri 尾巴在 R2 后清干净：
+  代码、依赖、脚本、CI、README 全部切到 Glaze 表述。）
 
 ## 风险与已知简化
 

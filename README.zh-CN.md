@@ -59,19 +59,20 @@ HN 老用户的肌肉记忆全部保留：**j/k** 上下移动选中，**Enter/o
 
 ## 技术栈
 
-**Tauri 2 + React + TypeScript**，单仓库，`apps/<platform>` + `packages/core`（沿用 Taskly 验证过的 monorepo 模式，但走 web 栈 —— HackDigest 是内容型应用：文章页、富文本评论树、排版，而内容渲染，web 引擎就是最好的文本引擎）。
+**Glaze（Racket 后端）+ React + TypeScript**，单仓库，`backend/` + `apps/desktop/` + `packages/core`（HackDigest 是内容型应用：文章页、富文本评论树、排版，而内容渲染，web 引擎就是最好的文本引擎；应用壳、存储、LLM 代理与更新检查住在 [Glaze](https://github.com/turinglambdaai/glaze) 驱动的 Racket 后端里）。
 
 - `packages/core` —— 纯 TypeScript，全端复用：HN API 客户端（官方 Firebase API + Algolia 搜索）、翻译管线、Digest 提示词，以及任意 OpenAI 兼容端点的 BYOK 预置（GLM、DeepSeek、通义、Kimi、OpenAI、Claude……），国内用户可直连国产 API。
 - 前端 —— React + Vite + zustand + Tailwind 4，渐进加载的评论树与信息流，深浅色。
-- 存储 —— IndexedDB（webview 自带，零插件）：收藏、历史、翻译缓存 —— 同一帖子的翻译绝不重复计费。
-- 网络 —— LLM 调用在 Tauri 环境走插件网络层（绕开 webview CORS）；HN 数据直接来自官方 [Hacker News API](https://github.com/HackerNews/API) 与 Algolia 搜索 API —— 不爬虫，BYOK 模式不需要任何后端。
-- 更新 —— Tauri updater 对接 GitHub Releases（minisign 签名），桌面端不过任何应用商店的审核。
+- 存储 —— SQLite + JSON 文件，住在 Racket 后端的应用数据目录：收藏、历史、翻译缓存 —— 同一帖子的翻译绝不重复计费。BYOK 的 API Key 只存在后端，页面碰不到。
+- 网络 —— LLM 调用经后端代理（含流式）；HN 数据直接来自官方 [Hacker News API](https://github.com/HackerNews/API) 与 Algolia 搜索 API —— 不爬虫。
+- 更新 —— 后端对接 GitHub Releases 做版本检查。
 
 ## 仓库结构
 
 ```
 hackdigest/
-├── apps/desktop/     Tauri 2 桌面应用（Windows / macOS / Linux）
+├── backend/          Racket 后端（Glaze）：存储、LLM 代理、应用壳
+├── apps/desktop/     React 前端（构建到 dist/，由后端托管）
 ├── apps/mobile/      Phase 3
 ├── packages/core/    共享 TypeScript 核心：HN API、翻译、Digest
 └── docs/

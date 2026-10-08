@@ -7,7 +7,6 @@
     "dev": "pnpm --filter @hackdigest/desktop dev",
     "build": "pnpm --filter @hackdigest/desktop build:vite",
     "check": "pnpm --filter @hackdigest/desktop check",
-    "tauri": "pnpm --filter @hackdigest/desktop tauri",
     "test": "vitest run"
   },
   "devDependencies": {

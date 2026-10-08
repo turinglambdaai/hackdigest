@@ -88,10 +88,12 @@ own key and nothing here applies — that path is free and unlimited, forever.
 
 ## Tech stack
 
-**Tauri 2 + React + TypeScript**, one repo, `apps/<platform>` + `packages/core`
-(the pattern Taskly settled on, with a web stack — HackDigest is a content
-app: story pages, rich comment trees, typeset text, and for content the web
-rendering engine is the best text engine available).
+**Glaze (Racket backend) + React + TypeScript**, one repo, `backend/` +
+`apps/desktop/` + `packages/core` (HackDigest is a content app — story
+pages, rich comment trees, typeset text — and for content the web rendering
+engine is the best text engine available; the app shell, storage, LLM proxy,
+and update checks live in a Racket backend served through
+[Glaze](https://github.com/turinglambdaai/glaze)).
 
 - `packages/core` — pure TypeScript, runs everywhere: HN API client (official
   Firebase API + Algolia search), translation pipeline, digest prompting, and
@@ -99,20 +101,21 @@ rendering engine is the best text engine available).
   OpenAI, Claude …) so mainland users can plug in a domestically reachable API.
 - Frontend — React + Vite + zustand + Tailwind 4; progressively-loaded
   feeds and comment trees, light/dark.
-- Storage — IndexedDB (built into the webview, zero plugins): bookmarks,
-  history, and a translation cache — a translated thread is never billed twice.
-- Network — LLM calls ride the Tauri plugin HTTP layer (no webview CORS); HN
+- Storage — SQLite + JSON files in the Racket backend's app-data dir:
+  bookmarks, history, and a translation cache — a translated thread is never
+  billed twice. BYOK API keys stay in the backend; the page never sees them.
+- Network — LLM calls proxy through the backend (streaming included); HN
   data comes straight from the official
   [Hacker News API](https://github.com/HackerNews/API) and Algolia search —
-  no scraping, no backend required for BYOK.
-- Updates — Tauri updater against GitHub Releases (minisign-signed); no
-  app-store gatekeeper on desktop.
+  no scraping.
+- Updates — release checks against GitHub Releases from the backend.
 
 ## Repo layout
 
 ```
 hackdigest/
-├── apps/desktop/     Tauri 2 desktop app (Windows / macOS / Linux)
+├── backend/          Racket backend on Glaze: storage, LLM proxy, app shell
+├── apps/desktop/     React frontend (built to dist/, served by the backend)
 ├── apps/mobile/      Phase 3
 ├── packages/core/    shared TypeScript core: HN API, translation, digests
 └── docs/
