@@ -9,18 +9,49 @@
 ;; text deltas through an on-delta callback; backend/main.rkt wraps that in a
 ;; streaming-response. Retry parity with the TS version: 400/422 with
 ;; json-mode retries once without response_format (some endpoints reject it);
-;; 429 retries once after 3s. R1 has no hard request timeout (see
-;; docs/GLAZE-MIGRATION.md).
+;; 429 retries once after 3s. Each round trip runs under a custodian deadline
+;; (60s by default, HACKDIGEST_LLM_TIMEOUT_SECS for tests).
 
 (require json
          net/http-client
          net/url
+         racket/async-channel
          racket/contract
          racket/format
          racket/list
          racket/match
          racket/port
          racket/string)
+
+;; Per-request deadline (Tauri parity: 60s). HACKDIGEST_LLM_TIMEOUT_SECS
+;; overrides it for tests.
+(define (llm-timeout-secs)
+  (or (let ([v (getenv "HACKDIGEST_LLM_TIMEOUT_SECS")])
+        (and v (string->number v)))
+      60))
+
+;; Run thunk under a private custodian with a wall-clock deadline: on
+;; timeout the custodian is shut down (closing the in-flight socket) and an
+;; llm-error with the TS-parity message is raised.
+(define (with-llm-deadline thunk)
+  (define cust (make-custodian))
+  (define done (make-async-channel))
+  (parameterize ([current-custodian cust])
+    (thread
+     (lambda ()
+       (async-channel-put
+        done
+        (with-handlers ([exn? (lambda (e) e)])
+          (cons 'ok (thunk)))))))
+  (define r (sync/timeout (llm-timeout-secs) done))
+  (custodian-shutdown-all cust)
+  (cond
+    [(not r)
+     (raise (llm-error (~a "请求超时（" (llm-timeout-secs)
+                           " 秒）—— 模型无响应，可尝试换一个模型或服务商")
+                       #f))]
+    [(exn? r) (raise r)]
+    [else (cdr r)]))
 
 (provide
  (contract-out
@@ -106,6 +137,10 @@
                               #:max-tokens max-tokens
                               #:temperature temperature
                               #:stream (and on-delta #t))))
+  ;; The whole round trip — connect, headers, body, stream reads — lives
+  ;; under one deadline; the custodian shutdown closes the socket mid-read.
+  (with-llm-deadline
+   (lambda ()
   (define conn (http-conn-open host #:port (or port (if ssl? 443 80)) #:ssl? ssl?))
   (dynamic-wind
     void
@@ -128,7 +163,7 @@
           (read-sse-deltas content on-delta)
           (read-non-stream-content content)))
     (lambda ()
-      (http-conn-close! conn))))
+      (http-conn-close! conn))))))
 
 (define (read-non-stream-content in)
   (define j (read-json in))

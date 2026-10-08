@@ -21,6 +21,7 @@
          "llm.rkt"
          "migrate.rkt"
          "platform.rkt"
+         "settings-rpc.rkt"
          "update-check.rkt")
 
 ;; Keep in sync with tauri.conf.json / package.json at release time
@@ -108,22 +109,41 @@
 
   [(POST "api/data/read")
    (data-read [name string?])
-   (hasheq 'json (nullable (read-data-file name)))]
+   (hasheq 'json
+           (nullable
+            (if (string=? name "settings")
+                (let ([raw (read-data-file "settings")])
+                  (if raw
+                      (jsexpr->string
+                       (mask-settings-jsexpr!
+                        (with-handlers ([exn:fail? (lambda (_) (hasheq))])
+                          (read-json (open-input-string raw)))))
+                      raw))
+                (read-data-file name))))
 
   [(POST "api/data/write")
    (data-write [name string?] [json string?])
-   (write-data-file name json)
+   ;; A masked key on the write path echoes the masked read — swap the
+   ;; stored key back so the page can never clear it by saving untouched.
+   (write-data-file
+    name
+    (if (string=? name "settings")
+        (jsexpr->string
+         (unmask-settings-jsexpr!
+          (with-handlers ([exn:fail? (lambda (_) (hasheq))])
+            (read-json (open-input-string json)))))
+        json))
    (hasheq 'ok #t)]
 
   [(POST "api/llm/test")
    (llm-test [cfg hash?])
-   (test-llm (jsexpr->cfg cfg))
+   (test-llm (resolve-llm-config (jsexpr->cfg cfg)))
    (hasheq 'ok #t)]
 
   [(POST "api/llm/chat")
    (llm-chat-r [cfg hash?] [msgs list?] [opts hash?])
    (hasheq 'content
-           (chat (jsexpr->cfg cfg)
+           (chat (resolve-llm-config (jsexpr->cfg cfg))
                  (jsexpr->msgs msgs)
                  #:json-mode (hash-ref opts 'jsonMode #f)
                  #:max-tokens (hash-ref opts 'maxTokens #f)
@@ -136,7 +156,7 @@
   ;; connection (streaming-response truncation semantics).
   [(POST "api/llm/chat/stream")
    (llm-chat-stream [cfg hash?] [msgs list?] [opts hash?])
-   (define the-cfg (jsexpr->cfg cfg))
+   (define the-cfg (resolve-llm-config (jsexpr->cfg cfg)))
    (define the-msgs (jsexpr->msgs msgs))
    (streaming-response
     (lambda (out)

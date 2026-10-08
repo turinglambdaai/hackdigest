@@ -64,11 +64,39 @@ function merge(raw: Partial<Settings> | null | undefined): Settings {
   return { ...DEFAULT_SETTINGS, ...raw, shortcuts: { ...DEFAULT_SHORTCUTS, ...(raw?.shortcuts ?? {}) } };
 }
 
+// The backend masks a stored BYOK key as this sentinel on reads (the hosted
+// provider's key is a license key and stays visible). The page sees an
+// empty field plus this marker so an untouched save keeps the stored key.
+const MASKED_KEY = '__SAVED__';
+
+interface LLMWithMarker extends LLMConfig {
+  hasSavedKey?: boolean;
+}
+
+function unmark(llm: LLMConfig | null): LLMConfig | null {
+  if (llm && (llm as LLMWithMarker).apiKey === MASKED_KEY) {
+    return { ...llm, apiKey: '', ...( { hasSavedKey: true } as Partial<LLMWithMarker>) };
+  }
+  if (llm && (llm as LLMWithMarker).hasSavedKey && llm.apiKey !== '') {
+    // The user typed a new key on top of a masked read — drop the marker.
+    const { hasSavedKey: _drop, ...rest } = llm as LLMWithMarker;
+    return rest;
+  }
+  return llm;
+}
+
+function remark(llm: LLMConfig | null): LLMConfig | null {
+  if (llm && (llm as LLMWithMarker).hasSavedKey && llm.apiKey === '') {
+    return { ...llm, apiKey: MASKED_KEY };
+  }
+  return llm;
+}
+
 export async function loadSettings(): Promise<Settings> {
   if (await hasBackend()) {
     // File is the source of truth in packaged builds.
     const fromFile = await readDataFile<Partial<Settings>>('settings');
-    if (fromFile) return merge(fromFile);
+    if (fromFile) return merge({ ...fromFile, llm: unmark(fromFile.llm ?? null) });
     // First run after this migration: adopt whatever IndexedDB still has.
     const saved = await kvGet<Partial<Settings>>('meta', 'settings');
     const merged = merge(saved);
@@ -81,7 +109,7 @@ export async function loadSettings(): Promise<Settings> {
 
 export async function saveSettings(s: Settings): Promise<void> {
   if (await hasBackend()) {
-    await writeDataFile('settings', s);
+    await writeDataFile('settings', { ...s, llm: remark(s.llm) });
     void kvSet('meta', 'settings', s); // best effort, dev convenience
     return;
   }

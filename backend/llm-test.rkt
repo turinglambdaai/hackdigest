@@ -172,3 +172,30 @@
      (check-exn
       (lambda (e) (and (exn:llm? e) (equal? (llm-error-status e) 401)))
       (lambda () (test-llm cfg))))))
+
+(test-case "per-request deadline fires (custodian closes the socket)"
+  (define-values (listener port) (listen-free-port!))
+  ;; a server that accepts and then never answers
+  (define server-thread
+    (thread
+     (lambda ()
+       (define-values (in out) (tcp-accept listener))
+       ;; hold both ports open, respond never
+       (sync (make-semaphore)))))
+  (dynamic-wind
+    (lambda () (putenv "HACKDIGEST_LLM_TIMEOUT_SECS" "1"))
+    (lambda ()
+      (sleep 0.1)
+      (define live-cfg (llm-config (~a "http://127.0.0.1:" port "/v1") "sk" "m"))
+      (define t0 (current-inexact-milliseconds))
+      (check-exn
+       (lambda (e) (and (exn:llm? e) (string-contains? (exn-message e) "请求超时")))
+       (lambda () (chat live-cfg (list (cons 'user "hi")))))
+      (define dt (- (current-inexact-milliseconds) t0))
+      (check-true (< dt 5000) "timeout must fire promptly, not hang")
+      ;; the worker thread must not leak alive after shutdown
+      (sleep 0.1))
+    (lambda ()
+      (putenv "HACKDIGEST_LLM_TIMEOUT_SECS" "")
+      (tcp-close listener)
+      (kill-thread server-thread))))
