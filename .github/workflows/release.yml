@@ -122,8 +122,9 @@ jobs:
 
       - name: Portable zip (.app at the archive root)
         run: |
-          cd dist
-          zip -qry "hackdigest-$VERSION-macos-${{ matrix.arch }}.zip" HackDigest.app
+          # Written to the repo root (not dist/) so both artifact paths
+          # share the checkout root and upload-artifact stores them flat.
+          (cd dist && zip -qry "../hackdigest-$VERSION-macos-${{ matrix.arch }}.zip" HackDigest.app)
 
       - name: Human installer (DMG, drag to Applications)
         run: |
@@ -154,7 +155,7 @@ jobs:
           name: macos-${{ matrix.arch }}
           path: |
             hackdigest-*-macos-${{ matrix.arch }}.dmg
-            dist/hackdigest-*-macos-${{ matrix.arch }}.zip
+            hackdigest-*-macos-${{ matrix.arch }}.zip
           if-no-files-found: error
 
   linux:
@@ -443,8 +444,11 @@ jobs:
           path: dist
       - name: Flatten artifact dirs
         run: |
-          find dist -mindepth 2 -maxdepth 2 -type f -exec mv {} dist/ \;
-          find dist -mindepth 1 -maxdepth 1 -type d -empty -delete
+          # Depth-agnostic: upload-artifact can nest files (its LCA rule
+          # preserves path prefixes), so pull every file up to dist/ and
+          # drop whatever directories remain.
+          find dist -mindepth 2 -type f -exec mv {} dist/ \;
+          find dist -mindepth 1 -maxdepth 1 -type d -exec rm -rf {} +
           ls -la dist/
       - name: Ensure SHA256SUMS
         run: |
