@@ -316,7 +316,7 @@ jobs:
                   $health = Invoke-WebRequest -UseBasicParsing -NoProxy -Headers @{ 'X-Glaze-Token' = 'smoke-token' } -Uri "http://127.0.0.1:$p/api/health" -TimeoutSec 20
                   $port = $p
                   break
-                } catch { Write-Host "port $p: $($_.Exception.Message)" }
+                } catch { Write-Host "port ${p}: $($_.Exception.Message)" }
               }
               if ($health) { break }
               if ($try -eq 3) { throw "health check failed after 3 tries across ports: $($ports -join ', ')" }
