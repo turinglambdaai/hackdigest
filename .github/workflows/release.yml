@@ -299,25 +299,28 @@ jobs:
             -WorkingDirectory (Resolve-Path 'dist').Path `
             -RedirectStandardOutput $outLog -RedirectStandardError $errLog
           try {
+            # The app process can hold several listening sockets (single-
+            # instance guard, internal services), and which one comes first
+            # is not stable — probe every port and let the health endpoint
+            # decide which one is the HTTP server.
+            $health = $null
             $port = $null
-            foreach ($i in 1..15) {
+            foreach ($try in 1..3) {
               Start-Sleep -Seconds 2
               if ($proc.HasExited) { throw "packaged app exited early (exit code $($proc.ExitCode))" }
-              $conn = Get-NetTCPConnection -OwningProcess $proc.Id -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1
-              if ($conn) { $port = $conn.LocalPort; break }
-            }
-            if (-not $port) { throw "packaged app never listened" }
-            # -NoProxy: Invoke-WebRequest otherwise consults system proxy
-            # settings even for loopback, which intermittently stalls.
-            $health = $null
-            foreach ($try in 1..3) {
-              try {
-                $health = Invoke-WebRequest -UseBasicParsing -NoProxy -Headers @{ 'X-Glaze-Token' = 'smoke-token' } -Uri "http://127.0.0.1:$port/api/health" -TimeoutSec 20
-                break
-              } catch {
-                if ($try -eq 3) { throw "health check failed after 3 tries: $_" }
-                Start-Sleep -Seconds 3
+              $ports = Get-NetTCPConnection -OwningProcess $proc.Id -State Listen -ErrorAction SilentlyContinue |
+                Select-Object -ExpandProperty LocalPort -Unique
+              Write-Host "listen candidates: $($ports -join ', ')"
+              foreach ($p in $ports) {
+                try {
+                  $health = Invoke-WebRequest -UseBasicParsing -NoProxy -Headers @{ 'X-Glaze-Token' = 'smoke-token' } -Uri "http://127.0.0.1:$p/api/health" -TimeoutSec 20
+                  $port = $p
+                  break
+                } catch { Write-Host "port $p: $($_.Exception.Message)" }
               }
+              if ($health) { break }
+              if ($try -eq 3) { throw "health check failed after 3 tries across ports: $($ports -join ', ')" }
+              Start-Sleep -Seconds 5
             }
             if ($health.Content -notmatch '"ok":true') { throw "health check failed: $($health.Content)" }
             $front = Invoke-WebRequest -UseBasicParsing -NoProxy -Uri "http://127.0.0.1:$port/" -TimeoutSec 20
