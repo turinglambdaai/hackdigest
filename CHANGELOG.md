@@ -7,7 +7,7 @@ releases and tags were withdrawn.
 
 ## [Unreleased]
 
-## 1.0.0 - unreleased
+## 1.0.0 - 2026-10-09
 
 First release of the Glaze line, on all three desktop platforms: macOS
 (Apple Silicon) `.dmg`, Windows 10/11 (x64) `.msi`, and Linux (x64)
