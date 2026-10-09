@@ -212,13 +212,13 @@ jobs:
       # xvfb (WEBKIT_DISABLE_DMABUF_RENDERER avoids the GPU-dependent
       # renderer on the runner) and serve API health + frontend. The
       # launcher lands in dist/bin while public/ sits in dist/, so start
-      # it with dist/ as the working directory. xvfb-run wraps the app in
-      # its own shell and the packaged launcher's process name is the
-      # Racket engine (racketcs-<ver>), so resolve the real app PID by its
-      # executable path, not by name. The process can hold several
-      # listening sockets (single-instance guard, internal services), so
-      # try each port and let /api/health pick the HTTP server, same
-      # policy as the Windows smoke.
+      # it with dist/ as the working directory. The packaged launcher
+      # execs into the Racket engine (argv[0] becomes racketcs-<ver>), so
+      # PID/name-based detection is unreliable: run the app in its own
+      # process group via setsid and probe every listening TCP port with
+      # the token-protected health endpoint — only our server can answer
+      # it, so the health check itself decides which port is the app
+      # (same policy as the Windows smoke).
       - name: Launch smoke (packaged binary serves API and frontend)
         run: |
           set -euo pipefail
@@ -226,26 +226,15 @@ jobs:
           data_dir="$(mktemp -d)"
           export HACKDIGEST_DATA_DIR="$data_dir" GLAZE_API_TOKEN=smoke-token
           cd dist
-          xvfb-run -a ./bin/HackDigest &
+          setsid xvfb-run -a ./bin/HackDigest &
           run_pid=$!
-          trap 'pkill -9 -f "bin/HackDigest" 2>/dev/null || true; kill -9 "$run_pid" 2>/dev/null || true' exit
-          app_pid=""
-          for _ in $(seq 1 10); do
-            sleep 2
-            for pid in $(pgrep -f "bin/HackDigest" 2>/dev/null || true); do
-              case "$(readlink -f "/proc/$pid/exe" 2>/dev/null || true)" in
-                */dist/bin/HackDigest) app_pid="$pid"; break ;;
-              esac
-            done
-            [ -n "$app_pid" ] && break
-          done
-          [ -n "$app_pid" ] || { echo "::error::packaged app never started under xvfb"; exit 1; }
+          trap 'kill -9 -- "-$run_pid" 2>/dev/null || true' exit
           health_port=""
           ports=""
           for _ in $(seq 1 15); do
             sleep 2
-            kill -0 "$app_pid" 2>/dev/null || { echo "::error::packaged app exited early"; exit 1; }
-            ports="$(lsof -a -p "$app_pid" -iTCP -sTCP:LISTEN -P -n 2>/dev/null | grep -oE ':[0-9]+' | tr -d ':' | sort -u || true)"
+            kill -0 "$run_pid" 2>/dev/null || { echo "::error::packaged app exited early"; exit 1; }
+            ports="$(lsof -iTCP -sTCP:LISTEN -P -n 2>/dev/null | grep -oE ':[0-9]+' | tr -d ':' | sort -u || true)"
             for p in $ports; do
               if curl -fsS -m 5 -H "X-Glaze-Token: smoke-token" "http://127.0.0.1:$p/api/health" 2>/dev/null | grep -q '"ok":true'; then
                 health_port="$p"
