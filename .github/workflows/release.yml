@@ -176,7 +176,7 @@ jobs:
             --name HackDigest \
             --version "$VERSION" \
             --out dist
-          test -x dist/HackDigest || { echo "::error::dist/HackDigest executable missing"; exit 1; }
+          test -x dist/bin/HackDigest || { echo "::error::dist/bin/HackDigest executable missing"; exit 1; }
           test -d dist/lib || { echo "::error::dist/lib missing"; exit 1; }
 
       - name: Tar the distribution
@@ -263,6 +263,27 @@ jobs:
           if ($package.Manufacturer -ne 'Turing Lambda') { throw "unexpected MSI publisher: $($package.Manufacturer)" }
           if ($package.Version -ne $env:VERSION) { throw "unexpected MSI version: $($package.Version)" }
           if (-not $package.ProductCode -or -not $package.UpgradeCode) { throw 'MSI is missing ProductCode or UpgradeCode' }
+
+      - name: Flat-stage native DLLs beside the executable
+        shell: pwsh
+        run: |
+          # raco distribute leaves loader DLLs (e.g. WebView2Loader.dll)
+          # inside dist/lib; a Windows exe only probes its own directory,
+          # so copy every collected DLL next to dist/HackDigest.exe.
+          Get-ChildItem -Path dist -Recurse -Filter *.dll |
+            Where-Object { $_.DirectoryName -ne (Resolve-Path 'dist').Path } |
+            Copy-Item -Destination (Resolve-Path 'dist').Path -Force
+          Get-ChildItem dist -Filter *.dll | Select-Object -ExpandProperty Name
+
+      - name: Ensure WebView2 Runtime (Evergreen)
+        shell: pwsh
+        run: |
+          $key = 'HKLM:\SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}'
+          if (Test-Path $key) { Write-Host "WebView2 Runtime present: $((Get-ItemProperty $key).pv)"; exit 0 }
+          Write-Host "WebView2 Runtime missing; installing via Evergreen Bootstrapper"
+          Invoke-WebRequest -Uri 'https://go.microsoft.com/fwlink/?linkid=2099617' -OutFile "$env:RUNNER_TEMP\webview2-bootstrapper.exe"
+          $p = Start-Process -FilePath "$env:RUNNER_TEMP\webview2-bootstrapper.exe" -Wait -PassThru -ArgumentList '/silent','/install'
+          if ($p.ExitCode -ne 0) { throw "WebView2 bootstrapper exited $($p.ExitCode)" }
 
       - name: Launch smoke (packaged binary serves API and frontend)
         shell: pwsh
