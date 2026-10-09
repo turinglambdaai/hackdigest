@@ -14,17 +14,16 @@ digested on demand.
 
 ## Download
 
-Releases are being rebuilt on the Glaze line. The first Glaze-line release
-(v1.0.0) will ship:
+Grab the latest build from
+[GitHub Releases](https://github.com/turinglambdaai/hackdigest/releases/latest) —
+every asset is built from source by GitHub CI and launch-smoke-tested on all
+three platforms:
 
-| Platform | Artifact |
+| Platform | Artifacts |
 |---|---|
-| macOS (Apple Silicon) | `.dmg` |
-| Linux (x64) | `.tar.gz` |
-| Windows 10/11 (x64) | `.msi` |
-
-Until that tag lands the Releases page is empty (the Tauri-line v0.x
-releases were withdrawn).
+| macOS (Apple Silicon / Intel) | `hackdigest-<version>-macos-<arch>.dmg` + portable `.zip` |
+| Linux (x64) | `hackdigest-<version>-linux-x64.tar.gz` |
+| Windows 10/11 (x64) | `hackdigest-<version>-windows-x64.msi` + portable `.zip` |
 
 > macOS builds are ad-hoc signed and not notarized: on first launch,
 > right-click → Open. The Windows MSI is unsigned, so SmartScreen may show
@@ -33,8 +32,10 @@ releases were withdrawn).
 Translation and digests need an LLM API key — set one in Settings (GLM,
 DeepSeek, Qwen, Kimi, OpenAI, or a local Ollama; all OpenAI-compatible).
 
-The app checks GitHub Releases on startup and tells you when a new version
-is out (the one-click updater returns with the first Glaze-line release).
+The app checks GitHub Releases on startup and, when a new version is out,
+takes you to the release page to download it. In-place updates are not in
+yet — they wait on the upstream Glaze updater
+([glaze#47](https://github.com/turinglambdaai/glaze/issues/47)).
 
 ## Keyboard-first
 
@@ -113,8 +114,9 @@ live in the Racket backend.
 - Network — HN data comes straight from the official
   [Hacker News API](https://github.com/HackerNews/API) and Algolia search —
   no scraping.
-- Updates — the backend checks GitHub Releases on startup; the banner takes
-  you to the new download until the one-click updater returns.
+- Updates — the backend checks GitHub Releases on startup; the banner opens
+  the release page in your browser. In-place updates wait on the upstream
+  Glaze updater (glaze#47).
 
 ## Repo layout
 

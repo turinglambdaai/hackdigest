@@ -10,21 +10,19 @@ Hacker News 大概是互联网上最好的技术首页 —— 但对数以百万
 
 ## 下载
 
-Releases 正在 Glaze 线上重建，首发（v1.0.0）将提供：
+到 [GitHub Releases](https://github.com/turinglambdaai/hackdigest/releases/latest) 取最新版本 —— 所有产物由 GitHub CI 从源码构建，并在三平台上通过启动冒烟验证：
 
 | 平台 | 产物 |
 |---|---|
-| macOS（Apple Silicon） | `.dmg` |
-| Linux（x64） | `.tar.gz` |
-| Windows 10/11（x64） | `.msi` |
-
-在首发 tag 落地之前，Releases 页面是空的（Tauri 线的 v0.x 发布已下架）。
+| macOS（Apple Silicon / Intel） | `hackdigest-<version>-macos-<arch>.dmg` + 便携 `.zip` |
+| Linux（x64） | `hackdigest-<version>-linux-x64.tar.gz` |
+| Windows 10/11（x64） | `hackdigest-<version>-windows-x64.msi` + 便携 `.zip` |
 
 > macOS 构建为 ad-hoc 签名、未公证：首次启动请右键 → 打开。Windows MSI 未签名，首次安装时 SmartScreen 可能告警 —— 选择「仍要运行」。
 
 翻译与 Digest 需要一个大模型 API Key —— 在设置里填一个（GLM、DeepSeek、通义、Kimi、OpenAI，或本地 Ollama，均为 OpenAI 兼容接口）。
 
-应用启动时会检查 GitHub Releases 并提示新版本（一键更新器将随 Glaze 线首个版本回归）。
+应用启动时会检查 GitHub Releases，发现新版本后带你前往发布页下载。应用内就地更新尚未实现 —— 等上游 Glaze 更新器（[glaze#47](https://github.com/turinglambdaai/glaze/issues/47)）落地。
 
 ## 键盘优先
 
@@ -65,7 +63,7 @@ HN 老用户的肌肉记忆全部保留：**j/k** 上下移动选中，**Enter/o
 - 前端 —— React + Vite + zustand + Tailwind 4，渐进加载的评论树与信息流，深浅色；应用内经 HTTP 与后端通信，纯浏览器 dev 保留 IndexedDB 兜底。
 - 后端 —— Racket：SQLite 存储（kv、翻译缓存、HN 条目缓存 —— 同一帖子的翻译绝不重复翻译）+ settings/library JSON 文件。翻译/Digest 管线（提示词构建、30 条标题批、评论自愈二分）在这里跑，BYOK 的 API Key 只存在后端、页面碰不到；LLM 调用经后端代理流式返回，带重试与 60 秒超时。
 - 网络 —— HN 数据直接来自官方 [Hacker News API](https://github.com/HackerNews/API) 与 Algolia 搜索 API —— 不爬虫。
-- 更新 —— 后端对接 GitHub Releases 做版本检查；一键更新器回归前，横幅引导前往新版本下载。
+- 更新 —— 后端对接 GitHub Releases 做版本检查；发现新版本时在浏览器打开发布页，应用内就地更新等上游 Glaze 更新器（glaze#47）落地。
 
 ## 仓库结构
 

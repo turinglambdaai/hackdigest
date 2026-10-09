@@ -7,6 +7,38 @@ releases and tags were withdrawn.
 
 ## [Unreleased]
 
+## 1.0.1 - 2026-10-09
+
+Packaging-hygiene release — no app-behavior changes beyond honest update
+wording.
+
+### Added
+
+- macOS builds now cover both architectures: Apple Silicon (arm64) and
+  Intel (x64), each shipped as an installer `.dmg` and a portable `.app`
+  `.zip`.
+- Windows ships a portable `.zip` (the same payload the MSI installs,
+  runnable from anywhere) beside the MSI.
+- Linux release builds now run a packaged-app launch smoke under xvfb
+  (API health + frontend served), the same bar macOS and Windows already
+  held.
+
+### Changed
+
+- Release assets renamed to the family convention — all-lowercase
+  `hackdigest-<version>-<os>-<arch>.<ext>`, with the macOS DMG
+  arch-suffixed (`-macos-arm64` / `-macos-x64`) instead of the previous
+  `HackDigest-v<version>-*` scheme.
+- Update wording now says what the current updater actually does: detect a
+  new version on startup and open the GitHub release page in your browser.
+  Site, README, and in-app copy no longer imply in-app install/auto-update;
+  the in-place updater is tracked upstream as glaze#47.
+
+Install caveats carried over from 1.0.0: macOS builds are ad-hoc signed and
+not notarized (right-click → Open on first launch); the Windows MSI is
+unsigned (SmartScreen may warn — More info → Run anyway); Linux needs
+libwebkit2gtk-4.1 present.
+
 ## 1.0.0 - 2026-10-09
 
 First release of the Glaze line, on all three desktop platforms: macOS

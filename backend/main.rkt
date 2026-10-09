@@ -29,7 +29,7 @@
 
 ;; Keep in sync with package.json and CHANGELOG.md; the release workflow's
 ;; validate job fails the tag if they disagree.
-(define app-version "1.0.0")
+(define app-version "1.0.1")
 
 (define-runtime-path frontend-dist "../apps/desktop/dist")
 

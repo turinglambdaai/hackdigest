@@ -32,9 +32,19 @@ jobs:
           grep -q "^## $TAG" CHANGELOG.md || { echo "::error::CHANGELOG.md has no '## $TAG' section"; exit 1; }
 
   macos:
-    name: macOS DMG
+    name: macOS package (${{ matrix.arch }})
     needs: validate
-    runs-on: macos-latest
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: arm64
+            runner: macos-latest
+            racket-arch: arm64
+          - arch: x64
+            runner: macos-15-intel
+            racket-arch: x64
     steps:
       - uses: actions/checkout@v4
 
@@ -61,7 +71,7 @@ jobs:
 
       - uses: Bogdanp/setup-racket@v1.15
         with:
-          architecture: arm64
+          architecture: ${{ matrix.racket-arch }}
           version: stable
           distribution: full
 
@@ -110,9 +120,14 @@ jobs:
           code="$(curl -s -o /dev/null -w '%{http_code}' -m 5 "http://127.0.0.1:$port/")"
           [ "$code" = "200" ] || { echo "::error::frontend returned $code"; exit 1; }
 
+      - name: Portable zip (.app at the archive root)
+        run: |
+          cd dist
+          zip -qry "hackdigest-$VERSION-macos-${{ matrix.arch }}.zip" HackDigest.app
+
       - name: Human installer (DMG, drag to Applications)
         run: |
-          dmg="HackDigest-v$VERSION-macos.dmg"
+          dmg="hackdigest-$VERSION-macos-${{ matrix.arch }}.dmg"
           staging="$(mktemp -d)/dmg-stage"
           mkdir -p "$staging"
           cp -R dist/HackDigest.app "$staging/"
@@ -124,8 +139,10 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: macos
-          path: HackDigest-*-macos.dmg
+          name: macos-${{ matrix.arch }}
+          path: |
+            hackdigest-*-macos-${{ matrix.arch }}.dmg
+            dist/hackdigest-*-macos-${{ matrix.arch }}.zip
           if-no-files-found: error
 
   linux:
@@ -159,7 +176,7 @@ jobs:
       - name: Install WebKit/GTK runtime dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends libwebkit2gtk-4.1-dev libgtk-3-dev
+          sudo apt-get install -y --no-install-recommends libwebkit2gtk-4.1-dev libgtk-3-dev xvfb
 
       - uses: Bogdanp/setup-racket@v1.15
         with:
@@ -179,17 +196,61 @@ jobs:
           test -x dist/bin/HackDigest || { echo "::error::dist/bin/HackDigest executable missing"; exit 1; }
           test -d dist/lib || { echo "::error::dist/lib missing"; exit 1; }
 
+      # Launch smoke, glaze-CI style: the packaged app must come up under
+      # xvfb (WEBKIT_DISABLE_DMABUF_RENDERER avoids the GPU-dependent
+      # renderer on the runner) and serve API health + frontend. The
+      # launcher lands in dist/bin while public/ sits in dist/, so start
+      # it with dist/ as the working directory. xvfb-run wraps the app in
+      # its own shell — resolve the real app PID via pgrep before probing;
+      # the process can hold several listening sockets (single-instance
+      # guard, internal services), so try each port and let /api/health
+      # pick the HTTP server, same policy as the Windows smoke.
+      - name: Launch smoke (packaged binary serves API and frontend)
+        run: |
+          set -euo pipefail
+          export WEBKIT_DISABLE_DMABUF_RENDERER=1
+          data_dir="$(mktemp -d)"
+          export HACKDIGEST_DATA_DIR="$data_dir" GLAZE_API_TOKEN=smoke-token
+          cd dist
+          xvfb-run -a ./bin/HackDigest &
+          run_pid=$!
+          trap 'pkill -9 -x HackDigest 2>/dev/null || true; kill -9 "$run_pid" 2>/dev/null || true' exit
+          app_pid=""
+          for _ in $(seq 1 10); do
+            sleep 2
+            app_pid="$(pgrep -x HackDigest | head -1 || true)"
+            [ -n "$app_pid" ] && break
+          done
+          [ -n "$app_pid" ] || { echo "::error::packaged app never started under xvfb"; exit 1; }
+          health_port=""
+          ports=""
+          for _ in $(seq 1 15); do
+            sleep 2
+            kill -0 "$app_pid" 2>/dev/null || { echo "::error::packaged app exited early"; exit 1; }
+            ports="$(lsof -a -p "$app_pid" -iTCP -sTCP:LISTEN -P -n 2>/dev/null | grep -oE ':[0-9]+' | tr -d ':' | sort -u || true)"
+            for p in $ports; do
+              if curl -fsS -m 5 -H "X-Glaze-Token: smoke-token" "http://127.0.0.1:$p/api/health" 2>/dev/null | grep -q '"ok":true'; then
+                health_port="$p"
+                break
+              fi
+            done
+            [ -n "$health_port" ] && break
+          done
+          [ -n "$health_port" ] || { echo "::error::packaged app never answered api/health (ports: ${ports:-none})"; exit 1; }
+          code="$(curl -s -o /dev/null -w '%{http_code}' -m 5 "http://127.0.0.1:$health_port/")"
+          [ "$code" = "200" ] || { echo "::error::frontend returned $code"; exit 1; }
+
       - name: Tar the distribution
         run: |
           stage="$(mktemp -d)/HackDigest"
           mkdir -p "$stage"
           cp -R dist/. "$stage/"
-          tar -czf "HackDigest-v$VERSION-linux-x64.tar.gz" -C "$(dirname "$stage")" HackDigest
+          tar -czf "hackdigest-$VERSION-linux-x64.tar.gz" -C "$(dirname "$stage")" HackDigest
 
       - uses: actions/upload-artifact@v4
         with:
           name: linux
-          path: HackDigest-*-linux-x64.tar.gz
+          path: hackdigest-*-linux-x64.tar.gz
           if-no-files-found: error
 
   windows:
@@ -339,12 +400,28 @@ jobs:
 
       - name: Name the installer artifact
         shell: bash
-        run: cp dist/HackDigest.msi "HackDigest-v$VERSION-windows-x64.msi"
+        run: mv dist/HackDigest.msi "hackdigest-$VERSION-windows-x64.msi"
+
+      # Portable zip: everything the MSI installs, runnable from anywhere.
+      # The MSI is moved out first, so what remains in dist/ is exactly the
+      # portable payload (exe + flat loader DLLs + lib/ + public/).
+      - name: Portable zip (self-contained folder at the archive root)
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $stage = "hackdigest-$env:VERSION-windows-x64"
+          if (Test-Path $stage) { Remove-Item -Recurse -Force $stage }
+          New-Item -ItemType Directory -Path $stage | Out-Null
+          Get-ChildItem dist | Copy-Item -Destination $stage -Recurse -Force
+          Compress-Archive -Path $stage -DestinationPath "hackdigest-$env:VERSION-windows-x64.zip" -Force
+          Remove-Item -Recurse -Force $stage
 
       - uses: actions/upload-artifact@v4
         with:
           name: windows
-          path: HackDigest-v*-windows-x64.msi
+          path: |
+            hackdigest-*-windows-x64.msi
+            hackdigest-*-windows-x64.zip
           if-no-files-found: error
 
   release:
@@ -369,17 +446,24 @@ jobs:
             find . -maxdepth 1 -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 shasum -a 256 > SHA256SUMS
           }
           shasum -a 256 --check SHA256SUMS
-      - name: Publish release
+      - name: Publish release (notes = CHANGELOG section for this version)
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          awk -v header="## ${VERSION}" '
+            index($0, header) == 1 {on=1; next}
+            on && /^## / {exit}
+            on {print}
+          ' CHANGELOG.md > /tmp/notes.md
+          test -s /tmp/notes.md || { echo "::error::empty release notes — CHANGELOG.md has no '## ${VERSION}' section"; exit 1; }
           if gh release view "${{ github.ref_name }}" -R turinglambdaai/hackdigest >/dev/null 2>&1; then
             gh release upload "${{ github.ref_name }}" dist/* --clobber -R turinglambdaai/hackdigest
           else
             gh release create "${{ github.ref_name }}" dist/* \
               -R turinglambdaai/hackdigest \
               --title "HackDigest ${{ github.ref_name }}" \
-              --notes "First release of the Glaze line. macOS (Apple Silicon) DMG, Linux (x64) tar.gz, and Windows 10/11 (x64) MSI. macOS builds are ad-hoc signed, not notarized — on first launch, right-click the app and choose Open. The Windows MSI is unsigned, so SmartScreen may show a warning — choose More info → Run anyway. Linux needs libwebkit2gtk-4.1 present (most desktop distros ship it)."
+              --notes-file /tmp/notes.md
           fi
       - name: Attest build provenance
         uses: actions/attest-build-provenance@v1
