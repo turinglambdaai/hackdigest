@@ -9,9 +9,9 @@ releases and tags were withdrawn.
 
 ## 1.0.0 - unreleased
 
-First release of the Glaze line. macOS (Apple Silicon) `.dmg` and Linux
-(x64) `.tar.gz`; the Windows host is planned once the upstream installer
-layer ships.
+First release of the Glaze line, on all three desktop platforms: macOS
+(Apple Silicon) `.dmg`, Windows 10/11 (x64) `.msi`, and Linux (x64)
+`.tar.gz`.
 
 ### Added
 
@@ -33,6 +33,11 @@ layer ships.
   as a `__SAVED__` mask).
 - One-time, idempotent migration of Tauri-era data (site.jrtx.hackdigest →
   sibling hackdigest directory, read-only copy).
+- Windows installer: a WiX MSI built from the same packaged distribution,
+  with a stable upgrade identity (`TuringLambda.HackDigest`) so in-place
+  upgrades work from this first release on. Release CI validates the MSI
+  (WiX validation + decompiled metadata) and smoke-tests the packaged
+  binary (API health + frontend served) on all three platforms.
 - Update check against GitHub Releases on startup with a go-to-download
   banner (the one-click updater returns in a later release).
 

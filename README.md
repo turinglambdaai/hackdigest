@@ -21,13 +21,14 @@ Releases are being rebuilt on the Glaze line. The first Glaze-line release
 |---|---|
 | macOS (Apple Silicon) | `.dmg` |
 | Linux (x64) | `.tar.gz` |
-| Windows 10/11 | planned — waiting on the upstream installer layer |
+| Windows 10/11 (x64) | `.msi` |
 
 Until that tag lands the Releases page is empty (the Tauri-line v0.x
 releases were withdrawn).
 
 > macOS builds are ad-hoc signed and not notarized: on first launch,
-> right-click → Open.
+> right-click → Open. The Windows MSI is unsigned, so SmartScreen may show
+> a warning on first install — choose More info → Run anyway.
 
 Translation and digests need an LLM API key — set one in Settings (GLM,
 DeepSeek, Qwen, Kimi, OpenAI, or a local Ollama; all OpenAI-compatible).

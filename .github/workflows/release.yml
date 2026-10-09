@@ -3,6 +3,7 @@ name: Release
 on:
   push:
     tags: ["v*"]
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -17,6 +18,10 @@ jobs:
       - uses: actions/checkout@v4
       - name: Check tag matches package.json, backend app-version, and CHANGELOG
         run: |
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+            echo "manual dispatch: skipping tag validation, building from package.json version"
+            exit 0
+          fi
           TAG="${GITHUB_REF_NAME#v}"
           ROOT_VERSION=$(node -p "require('./package.json').version")
           BACKEND_VERSION=$(sed -n 's/.*(define app-version "\([^"]*\)").*/\1/p' backend/main.rkt)
@@ -32,6 +37,15 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Resolve version
+        run: |
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+            VERSION="$(node -p "require('./package.json').version")"
+          else
+            VERSION="${GITHUB_REF_NAME#v}"
+          fi
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
 
       - uses: pnpm/action-setup@v4
 
@@ -71,7 +85,7 @@ jobs:
           raco glaze build \
             --entry backend/main.rkt \
             --name HackDigest \
-            --version "${GITHUB_REF_NAME#v}" \
+            --version "$VERSION" \
             --icon dist/HackDigest.icns \
             --sign - \
             --out dist
@@ -98,7 +112,7 @@ jobs:
 
       - name: Human installer (DMG, drag to Applications)
         run: |
-          dmg="HackDigest-${GITHUB_REF_NAME}-macos.dmg"
+          dmg="HackDigest-v$VERSION-macos.dmg"
           staging="$(mktemp -d)/dmg-stage"
           mkdir -p "$staging"
           cp -R dist/HackDigest.app "$staging/"
@@ -120,6 +134,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Resolve version
+        run: |
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+            VERSION="$(node -p "require('./package.json').version")"
+          else
+            VERSION="${GITHUB_REF_NAME#v}"
+          fi
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
 
       - uses: pnpm/action-setup@v4
 
@@ -151,12 +174,12 @@ jobs:
           raco glaze build \
             --entry backend/main.rkt \
             --name HackDigest \
-            --version "${GITHUB_REF_NAME#v}" \
+            --version "$VERSION" \
             --out-dir dist
           test -x dist/HackDigest/HackDigest || { echo "::error::dist/HackDigest/HackDigest missing"; exit 1; }
 
       - name: Tar the distribution
-        run: tar -czf "HackDigest-${GITHUB_REF_NAME}-linux-x64.tar.gz" -C dist HackDigest
+        run: tar -czf "HackDigest-v$VERSION-linux-x64.tar.gz" -C dist HackDigest
 
       - uses: actions/upload-artifact@v4
         with:
@@ -164,9 +187,118 @@ jobs:
           path: HackDigest-*-linux-x64.tar.gz
           if-no-files-found: error
 
+  windows:
+    name: Windows x64 MSI
+    needs: validate
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve version
+        shell: bash
+        run: |
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+            VERSION="$(node -p "require('./package.json').version")"
+          else
+            VERSION="${GITHUB_REF_NAME#v}"
+          fi
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Build frontend
+        run: pnpm build
+
+      - uses: Bogdanp/setup-racket@v1.15
+        with:
+          version: stable
+          distribution: full
+
+      - name: Install glaze
+        run: raco pkg install --auto --no-docs --skip-installed git+https://github.com/turinglambdaai/glaze
+
+      - name: Install WiX 5.0.2
+        shell: pwsh
+        run: |
+          dotnet tool install --global wix --version 5.0.2
+          "$env:USERPROFILE\.dotnet\tools" | Out-File -FilePath $env:GITHUB_PATH -Append
+
+      - name: Package app and MSI installer
+        shell: bash
+        run: |
+          raco glaze build \
+            --entry backend/main.rkt \
+            --name HackDigest \
+            --version "$VERSION" \
+            --publisher 'Turing Lambda' \
+            --identifier 'TuringLambda.HackDigest' \
+            --out dist \
+            --installer
+          test -f dist/HackDigest.msi || { echo "::error::dist/HackDigest.msi missing"; exit 1; }
+          test -f dist/HackDigest.exe || { echo "::error::dist/HackDigest.exe missing"; exit 1; }
+
+      - name: Validate MSI metadata
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $msi = (Resolve-Path 'dist/HackDigest.msi').Path
+          wix msi validate $msi
+          $wxs = Join-Path $env:RUNNER_TEMP 'hackdigest-release.wxs'
+          wix msi decompile $msi -o $wxs
+          [xml] $xml = Get-Content -Raw $wxs
+          $package = $xml.Wix.Package
+          if ($package.Name -ne 'HackDigest') { throw "unexpected MSI name: $($package.Name)" }
+          if ($package.Manufacturer -ne 'Turing Lambda') { throw "unexpected MSI publisher: $($package.Manufacturer)" }
+          if ($package.Version -ne $env:VERSION) { throw "unexpected MSI version: $($package.Version)" }
+          if (-not $package.ProductCode -or -not $package.UpgradeCode) { throw 'MSI is missing ProductCode or UpgradeCode' }
+
+      - name: Launch smoke (packaged binary serves API and frontend)
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $dataDir = Join-Path $env:RUNNER_TEMP 'hd-smoke-data'
+          New-Item -ItemType Directory -Path $dataDir -Force | Out-Null
+          $env:HACKDIGEST_DATA_DIR = $dataDir
+          $env:GLAZE_API_TOKEN = 'smoke-token'
+          $proc = Start-Process -FilePath (Resolve-Path 'dist/HackDigest.exe').Path -PassThru
+          try {
+            $port = $null
+            foreach ($i in 1..15) {
+              Start-Sleep -Seconds 2
+              if ($proc.HasExited) { throw "packaged app exited early (exit code $($proc.ExitCode))" }
+              $conn = Get-NetTCPConnection -OwningProcess $proc.Id -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1
+              if ($conn) { $port = $conn.LocalPort; break }
+            }
+            if (-not $port) { throw "packaged app never listened" }
+            $health = Invoke-WebRequest -UseBasicParsing -Headers @{ 'X-Glaze-Token' = 'smoke-token' } -Uri "http://127.0.0.1:$port/api/health" -TimeoutSec 5
+            if ($health.Content -notmatch '"ok":true') { throw "health check failed: $($health.Content)" }
+            $front = Invoke-WebRequest -UseBasicParsing -Uri "http://127.0.0.1:$port/" -TimeoutSec 5
+            if ($front.StatusCode -ne 200) { throw "frontend returned $($front.StatusCode)" }
+          } finally {
+            if (-not $proc.HasExited) { Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue }
+          }
+
+      - name: Name the installer artifact
+        shell: bash
+        run: cp dist/HackDigest.msi "HackDigest-v$VERSION-windows-x64.msi"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          path: HackDigest-v*-windows-x64.msi
+          if-no-files-found: error
+
   release:
     name: Publish
-    needs: [macos, linux]
+    needs: [macos, linux, windows]
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -195,7 +327,7 @@ jobs:
             gh release create "${{ github.ref_name }}" dist/* \
               -R turinglambdaai/hackdigest \
               --title "HackDigest ${{ github.ref_name }}" \
-              --notes "First release of the Glaze line. macOS (Apple Silicon) DMG and Linux (x64) tar.gz; the Windows host is planned once the upstream installer layer ships. Ad-hoc signed, not notarized — on first launch, right-click the app and choose Open. Linux needs libwebkit2gtk-4.1 present (most desktop distros ship it)."
+              --notes "First release of the Glaze line. macOS (Apple Silicon) DMG, Linux (x64) tar.gz, and Windows 10/11 (x64) MSI. macOS builds are ad-hoc signed, not notarized — on first launch, right-click the app and choose Open. The Windows MSI is unsigned, so SmartScreen may show a warning — choose More info → Run anyway. Linux needs libwebkit2gtk-4.1 present (most desktop distros ship it)."
           fi
       - name: Attest build provenance
         uses: actions/attest-build-provenance@v1

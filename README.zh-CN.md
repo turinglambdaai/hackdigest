@@ -16,11 +16,11 @@ Releases 正在 Glaze 线上重建，首发（v1.0.0）将提供：
 |---|---|
 | macOS（Apple Silicon） | `.dmg` |
 | Linux（x64） | `.tar.gz` |
-| Windows 10/11 | 规划中 —— 等上游安装器层就绪 |
+| Windows 10/11（x64） | `.msi` |
 
 在首发 tag 落地之前，Releases 页面是空的（Tauri 线的 v0.x 发布已下架）。
 
-> macOS 构建为 ad-hoc 签名、未公证：首次启动请右键 → 打开。
+> macOS 构建为 ad-hoc 签名、未公证：首次启动请右键 → 打开。Windows MSI 未签名，首次安装时 SmartScreen 可能告警 —— 选择「仍要运行」。
 
 翻译与 Digest 需要一个大模型 API Key —— 在设置里填一个（GLM、DeepSeek、通义、Kimi、OpenAI，或本地 Ollama，均为 OpenAI 兼容接口）。
 
