@@ -175,11 +175,16 @@ jobs:
             --entry backend/main.rkt \
             --name HackDigest \
             --version "$VERSION" \
-            --out-dir dist
-          test -x dist/HackDigest/HackDigest || { echo "::error::dist/HackDigest/HackDigest missing"; exit 1; }
+            --out dist
+          test -x dist/HackDigest || { echo "::error::dist/HackDigest executable missing"; exit 1; }
+          test -d dist/lib || { echo "::error::dist/lib missing"; exit 1; }
 
       - name: Tar the distribution
-        run: tar -czf "HackDigest-v$VERSION-linux-x64.tar.gz" -C dist HackDigest
+        run: |
+          stage="$(mktemp -d)/HackDigest"
+          mkdir -p "$stage"
+          cp -R dist/. "$stage/"
+          tar -czf "HackDigest-v$VERSION-linux-x64.tar.gz" -C "$(dirname "$stage")" HackDigest
 
       - uses: actions/upload-artifact@v4
         with:
@@ -267,7 +272,11 @@ jobs:
           New-Item -ItemType Directory -Path $dataDir -Force | Out-Null
           $env:HACKDIGEST_DATA_DIR = $dataDir
           $env:GLAZE_API_TOKEN = 'smoke-token'
-          $proc = Start-Process -FilePath (Resolve-Path 'dist/HackDigest.exe').Path -PassThru
+          $outLog = Join-Path $env:RUNNER_TEMP 'hd-smoke-out.log'
+          $errLog = Join-Path $env:RUNNER_TEMP 'hd-smoke-err.log'
+          $proc = Start-Process -FilePath (Resolve-Path 'dist/HackDigest.exe').Path -PassThru `
+            -WorkingDirectory (Resolve-Path 'dist').Path `
+            -RedirectStandardOutput $outLog -RedirectStandardError $errLog
           try {
             $port = $null
             foreach ($i in 1..15) {
@@ -283,6 +292,14 @@ jobs:
             if ($front.StatusCode -ne 200) { throw "frontend returned $($front.StatusCode)" }
           } finally {
             if (-not $proc.HasExited) { Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue }
+            if ($proc.HasExited -and $proc.ExitCode -ne 0) {
+              Write-Host "::group::smoke stdout"
+              if (Test-Path $outLog) { Get-Content $outLog }
+              Write-Host "::endgroup::"
+              Write-Host "::group::smoke stderr"
+              if (Test-Path $errLog) { Get-Content $errLog }
+              Write-Host "::endgroup::"
+            }
           }
 
       - name: Name the installer artifact
