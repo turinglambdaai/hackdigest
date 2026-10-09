@@ -127,12 +127,24 @@ jobs:
 
       - name: Human installer (DMG, drag to Applications)
         run: |
+          set -euo pipefail
           dmg="hackdigest-$VERSION-macos-${{ matrix.arch }}.dmg"
           staging="$(mktemp -d)/dmg-stage"
           mkdir -p "$staging"
           cp -R dist/HackDigest.app "$staging/"
           ln -s /Applications "$staging/Applications"
-          hdiutil create -volname HackDigest -srcfolder "$staging" -ov -format UDZO "$dmg"
+          # hdiutil create intermittently fails with "Resource busy" on CI
+          # runners (Spotlight/mds holding the staging dir) — retry.
+          created=""
+          for attempt in 1 2 3; do
+            if hdiutil create -volname HackDigest -srcfolder "$staging" -ov -format UDZO "$dmg"; then
+              created="yes"
+              break
+            fi
+            echo "hdiutil create attempt $attempt failed; retrying in 5s"
+            sleep 5
+          done
+          [ -n "$created" ] || { echo "::error::hdiutil create failed after 3 attempts"; exit 1; }
           hdiutil attach "$dmg" -mountpoint /tmp/hd-dmg-verify -readonly
           test -d /tmp/hd-dmg-verify/HackDigest.app
           hdiutil detach /tmp/hd-dmg-verify
@@ -201,10 +213,12 @@ jobs:
       # renderer on the runner) and serve API health + frontend. The
       # launcher lands in dist/bin while public/ sits in dist/, so start
       # it with dist/ as the working directory. xvfb-run wraps the app in
-      # its own shell — resolve the real app PID via pgrep before probing;
-      # the process can hold several listening sockets (single-instance
-      # guard, internal services), so try each port and let /api/health
-      # pick the HTTP server, same policy as the Windows smoke.
+      # its own shell and the packaged launcher's process name is the
+      # Racket engine (racketcs-<ver>), so resolve the real app PID by its
+      # executable path, not by name. The process can hold several
+      # listening sockets (single-instance guard, internal services), so
+      # try each port and let /api/health pick the HTTP server, same
+      # policy as the Windows smoke.
       - name: Launch smoke (packaged binary serves API and frontend)
         run: |
           set -euo pipefail
@@ -214,11 +228,15 @@ jobs:
           cd dist
           xvfb-run -a ./bin/HackDigest &
           run_pid=$!
-          trap 'pkill -9 -x HackDigest 2>/dev/null || true; kill -9 "$run_pid" 2>/dev/null || true' exit
+          trap 'pkill -9 -f "bin/HackDigest" 2>/dev/null || true; kill -9 "$run_pid" 2>/dev/null || true' exit
           app_pid=""
           for _ in $(seq 1 10); do
             sleep 2
-            app_pid="$(pgrep -x HackDigest | head -1 || true)"
+            for pid in $(pgrep -f "bin/HackDigest" 2>/dev/null || true); do
+              case "$(readlink -f "/proc/$pid/exe" 2>/dev/null || true)" in
+                */dist/bin/HackDigest) app_pid="$pid"; break ;;
+              esac
+            done
             [ -n "$app_pid" ] && break
           done
           [ -n "$app_pid" ] || { echo "::error::packaged app never started under xvfb"; exit 1; }
