@@ -68,6 +68,7 @@
          ed25519-verify-message
          verify-manifest-signature
          verify-artifact!
+         bundle-from-exe-path
          perform-check!
          check-response
          start-download!
@@ -222,13 +223,22 @@
 (define (current-executable)
   (simplify-path (path->complete-path (find-system-path 'run-file))))
 
+;; Pure bundle detection: does this executable path live inside a macOS
+;; .app bundle? (Unit-tested; the match-on-'Contents-symbol trap lives
+;; here no longer.)
+(define (bundle-from-exe-path exe)
+  (define parts (explode-path exe))
+  (define n (length parts))
+  (and (>= n 4)
+       (equal? (list-ref parts (- n 3)) (string->path "Contents"))
+       (equal? (list-ref parts (- n 2)) (string->path "MacOS"))
+       (let ([app (list-ref parts (- n 4))])
+         (and (string-suffix? (path->string app) ".app") app))))
+
 ;; The .app bundle when running packaged on macOS, e.g.
 ;; /Applications/HackDigest.app; #f in dev (run-file is the racket binary).
 (define (current-app-bundle)
-  (match (explode-path (current-executable))
-    [(list _ ... app 'Contents 'MacOS _)
-     (and (string-suffix? (path->string app) ".app") app)]
-    [_ #f]))
+  (bundle-from-exe-path (current-executable)))
 
 (define (current-exe-dir)
   (path-only (current-executable)))

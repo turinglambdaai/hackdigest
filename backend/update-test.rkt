@@ -11,7 +11,9 @@
          json
          net/base64
          racket/file
+         racket/path
          racket/port
+         racket/string
          racket/system
          rackunit
          "update.rkt")
@@ -33,6 +35,20 @@
 
 (test-case "install mode is one of the documented kinds"
   (check-pred (lambda (m) (member m '(in-place manual page))) (install-mode)))
+
+(test-case "bundle detection from an executable path"
+  (define (bundle s) (bundle-from-exe-path (string->path s)))
+  (define (bundle-name s) (file-name-from-path (bundle s)))
+  ;; packaged mac layouts — the app element of the detected bundle
+  (check-equal? (bundle-name "/Applications/HackDigest.app/Contents/MacOS/HackDigest")
+                (string->path "HackDigest.app"))
+  (check-equal? (bundle-name "/tmp/hd-e2e/instance/HackDigest.app/Contents/MacOS/HackDigest")
+                (string->path "HackDigest.app"))
+  (check-true (string-suffix? (path->string (bundle "/x/HackDigest.app/Contents/MacOS/HackDigest")) ".app"))
+  ;; dev and non-mac layouts must not be mistaken for a bundle
+  (check-false (bundle "/opt/homebrew/bin/racket"))
+  (check-false (bundle "/Applications/HackDigest.app/Contents/MacOS/bin/HackDigest"))
+  (check-false (bundle "/Applications/HackDigest.app/Contents/HackDigest")))
 
 ;; ---- fixture keypair ----
 
