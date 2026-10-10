@@ -236,16 +236,19 @@
                      (find-system-path 'orig-dir)))
 
 ;; Pure bundle detection: does this executable path live inside a macOS
-;; .app bundle? (Unit-tested; the match-on-'Contents-symbol trap lives
-;; here no longer.)
+;; .app bundle, and where is it? Returns the absolute bundle path.
+;; (Unit-tested; explode-path yields RELATIVE middle elements, so the
+;; bundle path is rebuilt from the parts instead of returning the bare
+;; element — path-only on that would be #f and kill the writability
+;; check downstream.)
 (define (bundle-from-exe-path exe)
   (define parts (explode-path exe))
   (define n (length parts))
   (and (>= n 4)
        (equal? (list-ref parts (- n 3)) (string->path "Contents"))
        (equal? (list-ref parts (- n 2)) (string->path "MacOS"))
-       (let ([app (list-ref parts (- n 4))])
-         (and (string-suffix? (path->string app) ".app") app))))
+       (string-suffix? (path->string (list-ref parts (- n 4))) ".app")
+       (apply build-path (take parts (- n 3)))))
 
 ;; The .app bundle when running packaged on macOS, e.g.
 ;; /Applications/HackDigest.app; #f in dev (run-file is the racket binary).
