@@ -7,11 +7,12 @@ releases and tags were withdrawn.
 
 ## [Unreleased]
 
-## 1.1.0 - 2026-10-10
+## 0.1.0 - 2026-10-10
 
-The in-app updater (R3 of the Glaze migration): HackDigest can now update
-itself end to end, closing the gap v1.0.1 documented as "open the release
-page".
+The in-app updater (R3 of the Glaze migration) and the 0.x epoch reset:
+HackDigest can now update itself end to end, closing the gap v1.0.1
+documented as "open the release page". The 1.x line's releases and tags
+are withdrawn as the whole family enters its 0.x stage.
 
 ### Added
 

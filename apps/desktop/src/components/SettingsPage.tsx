@@ -20,7 +20,7 @@ import { useUpdateFlow } from './UpdateBanner';
 import ShortcutSettings from './ShortcutSettings';
 
 // Fallback only; the backend's /api/health version overrides it.
-const APP_VERSION = '1.1.0';
+const APP_VERSION = '0.1.0';
 const REPO_URL = 'https://github.com/turinglambdaai/hackdigest';
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
