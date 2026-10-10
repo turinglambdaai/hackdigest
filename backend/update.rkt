@@ -116,6 +116,15 @@
 ;; once per launch so an installation stays in the same bucket.
 (define current-rollout-bucket (make-parameter 0))
 
+;; App-lifetime custodian, captured at module load (outside any inbound
+;; request). The web-server that fronts /api/* manages a custodian per
+;; connection and reaps it when the connection closes — anything spawned
+;; inside a route handler (the download worker, the install handover
+;; subprocesses, the delayed self-exit) would be silently killed the
+;; moment the HTTP response is on the wire. Everything long-lived here is
+;; therefore attached to this custodian instead.
+(define updater-custodian (make-custodian (current-custodian)))
+
 ;; ---------- crypto primitives (libcrypto FFI, no CLI) ----------
 
 (define (bytes->base64-string value)
@@ -470,7 +479,8 @@
 
 ;; Runs on a backend worker thread; the frontend follows progress via
 ;; /api/update/state. Never raises: failures surface through the phase.
-(define (start-download!)  (define worker (unbox worker-thread-box))
+(define (start-download!)
+  (define worker (unbox worker-thread-box))
   (when (and worker (thread-running? worker))
     (error 'start-download! "an update download is already running"))
   (define candidate (unbox candidate-box))
@@ -481,17 +491,20 @@
   (state-set! 'message #f)
   (define destination (destination-path candidate))
   (set-box! worker-thread-box
-            (thread
-             (lambda ()
-               (with-handlers
-                   ([exn:fail?
-                     (lambda (e)
-                       (state-set! 'phase "error")
-                       (state-set! 'message (exn-message e)))])
-                 (define path (download-with-progress! candidate destination))
-                 (state-set! 'phase "downloaded")
-                 (state-set! 'percent 100)
-                 (state-set! 'downloadedPath (path->string path)))))))
+            ;; App custodian, not the inbound request's (see updater-custodian):
+            ;; a request-scoped thread is reaped when the connection closes.
+            (parameterize ([current-custodian updater-custodian])
+              (thread
+               (lambda ()
+                 (with-handlers
+                     ([exn:fail?
+                       (lambda (e)
+                         (state-set! 'phase "error")
+                         (state-set! 'message (exn-message e)))])
+                   (define path (download-with-progress! candidate destination))
+                   (state-set! 'phase "downloaded")
+                   (state-set! 'percent 100)
+                   (state-set! 'downloadedPath (path->string path))))))))
 
 ;; ---------- install handover ----------
 ;;
@@ -503,9 +516,12 @@
 ;; delay thread.
 
 ;; Respond first, die second: the route returns the hasheq and this thread
-;; tears the process down once the response is on the wire.
+;; tears the process down once the response is on the wire. Runs under the
+;; app custodian — a request-scoped thread would be reaped with the
+;; connection and the app would never exit.
 (define (schedule-exit! [delay-secs 1])
-  (thread (lambda () (sleep delay-secs) (exit 0))))
+  (parameterize ([current-custodian updater-custodian])
+    (thread (lambda () (sleep delay-secs) (exit 0)))))
 
 ;; ---- macOS: ditto unpack, atomic .app swap, relaunch ----
 
@@ -552,11 +568,13 @@
   (delete-directory/files staging)
   ;; A detached shell waits for this process to disappear ($PPID) and then
   ;; reopens the replaced bundle — the new app's single-instance guard
-  ;; needs the old process gone first.
-  (subprocess #f (current-output-port) (current-error-port)
-              "/bin/sh" "-c"
-              "while kill -0 $PPID 2>/dev/null; do sleep 0.3; done\nexec /usr/bin/open \"$1\"\n"
-              "sh" (path->string bundle))
+  ;; needs the old process gone first. Spawned under the app custodian so
+  ;; the handover survives the closing HTTP connection.
+  (parameterize ([current-custodian updater-custodian])
+    (subprocess #f (current-output-port) (current-error-port)
+                "/bin/sh" "-c"
+                "while kill -0 $PPID 2>/dev/null; do sleep 0.3; done\nexec /usr/bin/open \"$1\"\n"
+                "sh" (path->string bundle)))
   (schedule-exit!)
   (hasheq 'ok #t 'restarting #t))
 
@@ -640,9 +658,11 @@
   (call-with-output-file script-path
     (lambda (out) (display (windows-handover-script install-dir staged-root updates) out))
     #:exists 'truncate/replace)
-  ;; Detached: the handover outlives this process on purpose.
-  (subprocess #f (current-output-port) (current-error-port)
-              "cmd" "/c" (path->string script-path))
+  ;; Detached: the handover outlives this process on purpose. Spawned
+  ;; under the app custodian so the closing connection cannot reap it.
+  (parameterize ([current-custodian updater-custodian])
+    (subprocess #f (current-output-port) (current-error-port)
+                "cmd" "/c" (path->string script-path)))
   (schedule-exit!)
   (hasheq 'ok #t 'restarting #t))
 
