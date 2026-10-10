@@ -69,6 +69,7 @@
          verify-manifest-signature
          verify-artifact!
          bundle-from-exe-path
+         resolve-self-path
          perform-check!
          check-response
          start-download!
@@ -218,10 +219,21 @@
   (make-directory* dir)
   dir)
 
+;; Pure self-path resolution: argv[0]-style paths can be relative while a
+;; launcher has already changed the working directory by the time the
+;; updater runs — resolve those against the launch-time CWD ('orig-dir),
+;; never the current one. (Unit-tested; unit-testable on purpose.)
+(define (resolve-self-path raw orig-dir)
+  (simplify-path
+   (if (relative-path? raw)
+       (path->complete-path raw orig-dir)
+       raw)))
+
 ;; The running executable, not resolving symlinks (a symlinked install
 ;; still lives where its real path says).
 (define (current-executable)
-  (simplify-path (path->complete-path (find-system-path 'run-file))))
+  (resolve-self-path (find-system-path 'run-file)
+                     (find-system-path 'orig-dir)))
 
 ;; Pure bundle detection: does this executable path live inside a macOS
 ;; .app bundle? (Unit-tested; the match-on-'Contents-symbol trap lives

@@ -50,6 +50,17 @@
   (check-false (bundle "/Applications/HackDigest.app/Contents/MacOS/bin/HackDigest"))
   (check-false (bundle "/Applications/HackDigest.app/Contents/HackDigest")))
 
+(test-case "self-path resolution survives a launcher chdir"
+  (define (resolve raw orig) (path->string (resolve-self-path (string->path raw) (string->path orig))))
+  ;; absolute invocation is untouched
+  (check-equal? (resolve "/tmp/hd-e2e/instance/HackDigest.app/Contents/MacOS/HackDigest" "/")
+                "/tmp/hd-e2e/instance/HackDigest.app/Contents/MacOS/HackDigest")
+  ;; relative argv[0] resolves against the launch-time directory, not cwd
+  (check-equal? (resolve "./instance/HackDigest.app/Contents/MacOS/HackDigest" "/tmp/hd-e2e")
+                "/tmp/hd-e2e/instance/HackDigest.app/Contents/MacOS/HackDigest")
+  (check-equal? (resolve "HackDigest.exe" "/opt/apps/hackdigest")
+                "/opt/apps/hackdigest/HackDigest.exe"))
+
 ;; ---- fixture keypair ----
 
 ;; OpenSSL 3 is required for Ed25519 (macOS's LibreSSL cannot do it).
