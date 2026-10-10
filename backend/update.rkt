@@ -569,9 +569,10 @@
   ;; A detached shell waits for this process to disappear ($PPID) and then
   ;; reopens the replaced bundle — the new app's single-instance guard
   ;; needs the old process gone first. Spawned under the app custodian so
-  ;; the handover survives the closing HTTP connection.
+  ;; the handover survives the closing HTTP connection; stdio inherited
+  ;; (subprocess's #f args), the script is silent.
   (parameterize ([current-custodian updater-custodian])
-    (subprocess #f (current-output-port) (current-error-port)
+    (subprocess #f #f #f
                 "/bin/sh" "-c"
                 "while kill -0 $PPID 2>/dev/null; do sleep 0.3; done\nexec /usr/bin/open \"$1\"\n"
                 "sh" (path->string bundle)))
@@ -659,9 +660,10 @@
     (lambda (out) (display (windows-handover-script install-dir staged-root updates) out))
     #:exists 'truncate/replace)
   ;; Detached: the handover outlives this process on purpose. Spawned
-  ;; under the app custodian so the closing connection cannot reap it.
+  ;; under the app custodian so the closing connection cannot reap it;
+  ;; stdio inherited, the script logs to the updates dir.
   (parameterize ([current-custodian updater-custodian])
-    (subprocess #f (current-output-port) (current-error-port)
+    (subprocess #f #f #f
                 "cmd" "/c" (path->string script-path)))
   (schedule-exit!)
   (hasheq 'ok #t 'restarting #t))
