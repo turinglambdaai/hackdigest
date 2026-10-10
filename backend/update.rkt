@@ -512,16 +512,7 @@
 ;; "downloaded". macOS and Windows swap the portable install themselves and
 ;; restart; Linux stops at "reveal the downloaded archive" — the family
 ;; rule for tar.gz installs. Everything here runs on the API thread and
-;; must answer before the process goes away, so exits are scheduled on a
-;; delay thread.
-
-;; Respond first, die second: the route returns the hasheq and this thread
-;; tears the process down once the response is on the wire. Runs under the
-;; app custodian — a request-scoped thread would be reaped with the
-;; connection and the app would never exit.
-(define (schedule-exit! [delay-secs 1])
-  (parameterize ([current-custodian updater-custodian])
-    (thread (lambda () (sleep delay-secs) (exit 0)))))
+;; must answer before the process goes away.
 
 ;; ---- macOS: ditto unpack, atomic .app swap, relaunch ----
 
@@ -566,17 +557,17 @@
           (raise e))])
     (rename-file-or-directory (staged-app-in staging) bundle))
   (delete-directory/files staging)
-  ;; A detached shell waits for this process to disappear ($PPID) and then
-  ;; reopens the replaced bundle — the new app's single-instance guard
-  ;; needs the old process gone first. Spawned under the app custodian so
-  ;; the handover survives the closing HTTP connection; stdio inherited
-  ;; (subprocess's #f args), the script is silent.
+  ;; A detached shell owns the whole restart timeline: give the HTTP
+  ;; response a moment to flush, then SIGKILL this process from outside
+  ;; (an in-process exit deadlocks in the webview's foreign run loop —
+  ;; custodian shutdown cannot reap a thread parked in native code), wait
+  ;; for it to disappear, and reopen the replaced bundle. Spawned under
+  ;; the app custodian so the closing connection cannot reap the handover.
   (parameterize ([current-custodian updater-custodian])
     (subprocess #f #f #f
                 "/bin/sh" "-c"
-                "while kill -0 $PPID 2>/dev/null; do sleep 0.3; done\nexec /usr/bin/open \"$1\"\n"
+                "sleep 1.5\nkill -9 $PPID 2>/dev/null\nwhile kill -0 $PPID 2>/dev/null; do sleep 0.2; done\nexec /usr/bin/open \"$1\"\n"
                 "sh" (path->string bundle)))
-  (schedule-exit!)
   (hasheq 'ok #t 'restarting #t))
 
 ;; ---- Windows: unpack beside the install dir, cmd handover ----
@@ -604,9 +595,11 @@
     (error 'install "the downloaded update contains no HackDigest.exe"))
   (path-only exe))
 
-;; The handover waits for the running app to die without needing a pid: a
-;; directory holding a running .exe cannot be moved, so the swap move acts
-;; as its own completion signal (60 tries ≈ 60s, then fail + marker).
+;; The handover force-quits the app (an in-process exit deadlocks in the
+;; WebView2 run loop), then waits for the running exe to die without
+;; needing a pid: a directory holding a running .exe cannot be moved, so
+;; the swap move acts as its own completion signal (60 tries ≈ 60s, then
+;; fail + marker).
 (define (windows-handover-script install-dir staged-root updates-dir)
   (define install (path->string install-dir))
   (define log (path->string (build-path updates-dir "install.log")))
@@ -622,6 +615,8 @@
    "set \"EXE=" install "\\HackDigest.exe\"\r\n"
    "set /a TRIES=0\r\n"
    "echo %date% %time% update handover>\"%LOG%\"\r\n"
+   "ping -n 2 127.0.0.1 >nul\r\n"
+   "taskkill /F /IM HackDigest.exe >nul 2>&1\r\n"
    "if exist \"%OLD%\" rmdir /s /q \"%OLD%\"\r\n"
    ":wait\r\n"
    "move /y \"%INSTALL%\" \"%OLD%\" >nul 2>&1\r\n"
@@ -665,7 +660,6 @@
   (parameterize ([current-custodian updater-custodian])
     (subprocess #f #f #f
                 "cmd" "/c" (path->string script-path)))
-  (schedule-exit!)
   (hasheq 'ok #t 'restarting #t))
 
 ;; ---- Linux: reveal the downloaded archive (family rule) ----
