@@ -119,11 +119,20 @@ jobs:
             ./dist/HackDigest.app/Contents/MacOS/HackDigest &
           app_pid=$!
           trap 'kill -9 $app_pid 2>/dev/null || true' exit
+          # The app holds several listening sockets (single-instance guard,
+          # HTTP server) and their order is not stable: probe every port
+          # and let the health endpoint decide which one is the app (same
+          # policy as the Linux and Windows smokes).
           port=""
           for _ in $(seq 1 15); do
             sleep 2
             kill -0 "$app_pid" 2>/dev/null || { echo "::error::packaged app exited early"; exit 1; }
-            port="$(lsof -a -p "$app_pid" -iTCP -sTCP:LISTEN -P -n 2>/dev/null | tail -1 | grep -oE ':[0-9]+' | tail -1 | tr -d ':')"
+            for p in $(lsof -a -p "$app_pid" -iTCP -sTCP:LISTEN -P -n 2>/dev/null | grep -oE ':[0-9]+' | tr -d ':' | sort -u); do
+              if curl -fsS -m 10 -H "X-Glaze-Token: smoke-token" "http://127.0.0.1:$p/api/health" 2>/dev/null | grep -q '"ok":true'; then
+                port="$p"
+                break
+              fi
+            done
             [ -n "$port" ] && break
           done
           [ -n "$port" ] || { echo "::error::packaged app never listened"; exit 1; }
