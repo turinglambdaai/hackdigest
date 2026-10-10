@@ -179,9 +179,19 @@ jobs:
           if-no-files-found: error
 
   linux:
-    name: Linux x64 tar.gz
+    name: Linux ${{ matrix.arch }} (tar.gz + deb)
     needs: validate
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x64
+            runner: ubuntu-latest
+            racket-arch: x64
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+            racket-arch: arm64
     steps:
       - uses: actions/checkout@v4
 
@@ -213,6 +223,7 @@ jobs:
 
       - uses: Bogdanp/setup-racket@v1.15
         with:
+          architecture: ${{ matrix.racket-arch }}
           version: stable
           distribution: full
 
@@ -278,12 +289,214 @@ jobs:
           stage="$(mktemp -d)/HackDigest"
           mkdir -p "$stage"
           cp -R dist/. "$stage/"
-          tar -czf "hackdigest-$VERSION-linux-x64.tar.gz" -C "$(dirname "$stage")" HackDigest
+          tar -czf "hackdigest-$VERSION-linux-${{ matrix.arch }}.tar.gz" -C "$(dirname "$stage")" HackDigest
+
+      # Hand-rolled deb (this pipeline does not use glaze build --installer):
+      # dpkg-deb is on every ubuntu runner. FHS layout per the task spec —
+      # payload at /opt/hackdigest (the launcher's relative bin/ + lib/plt
+      # resolution stays intact), a hackdigest wrapper on PATH, a desktop
+      # entry and hicolor icons for menu integration. Depends names what
+      # the app actually FFI-loads at runtime (glaze webview-linux: gtk-3,
+      # webkit2gtk-4.1 with a 4.0 fallback; the updater's crypto package:
+      # libcrypto.so.3; external links and the linux update reveal:
+      # xdg-open). Everything else (glib/gobject/pixbuf/graphene/...) is
+      # pulled in transitively by these.
+      - name: Package deb
+        run: |
+          set -euo pipefail
+          case "${{ matrix.arch }}" in
+            x64)   deb_arch=amd64 ;;
+            arm64) deb_arch=arm64 ;;
+            *) echo "::error::no deb arch mapping for ${{ matrix.arch }}"; exit 1 ;;
+          esac
+          root="$(mktemp -d)/hackdigest-deb"
+          mkdir -p "$root/DEBIAN" \
+                   "$root/opt/hackdigest" \
+                   "$root/usr/bin" \
+                   "$root/usr/share/applications"
+          cp -R dist/. "$root/opt/hackdigest/"
+          cat > "$root/usr/bin/hackdigest" <<'EOF'
+          #!/bin/sh
+          exec /opt/hackdigest/bin/HackDigest "$@"
+          EOF
+          chmod 755 "$root/usr/bin/hackdigest"
+          for s in 16 24 32 48 64 128 256 512; do
+            dir="$root/usr/share/icons/hicolor/${s}x${s}/apps"
+            mkdir -p "$dir"
+            convert icon-1024.png -resize ${s}x${s} "$dir/hackdigest.png"
+          done
+          cat > "$root/usr/share/applications/hackdigest.desktop" <<'EOF'
+          [Desktop Entry]
+          Type=Application
+          Name=HackDigest
+          GenericName=Hacker News reader
+          Comment=Hacker News with built-in translation and AI digests
+          Exec=/usr/bin/hackdigest
+          Icon=hackdigest
+          Terminal=false
+          Categories=Network;Utility;
+          EOF
+          installed_size="$(du -sk --apparent-size "$root/opt/hackdigest" | cut -f1)"
+          cat > "$root/DEBIAN/control" <<EOF
+          Package: hackdigest
+          Version: $VERSION
+          Architecture: $deb_arch
+          Maintainer: Turing Lambda <jirentianxiang1024@gmail.com>
+          Section: net
+          Priority: optional
+          Installed-Size: $installed_size
+          Depends: libwebkit2gtk-4.1-0 | libwebkit2gtk-4.0-37, libgtk-3-0, libssl3, xdg-utils
+          Homepage: https://github.com/turinglambdaai/hackdigest
+          Description: Hacker News reader with built-in translation and AI digests
+           HackDigest turns Hacker News into your language: on-demand translation
+           of stories and comment threads, three-layer AI digests (article TL;DR,
+           thread digest, daily digest), and a keyboard-first UI served by a
+           Racket (Glaze) backend in a native WebKitGTK window.
+           .
+           Bring your own OpenAI-compatible API key (GLM, DeepSeek, Qwen, Kimi,
+           OpenAI, or a local Ollama). Data stays local in SQLite.
+          EOF
+          cat > "$root/DEBIAN/postinst" <<'EOF'
+          #!/bin/sh
+          set -e
+          if command -v gtk-update-icon-cache >/dev/null 2>&1; then
+            gtk-update-icon-cache -q -t -f /usr/share/icons/hicolor || true
+          fi
+          if command -v update-desktop-database >/dev/null 2>&1; then
+            update-desktop-database -q || true
+          fi
+          EOF
+          chmod 755 "$root/DEBIAN/postinst"
+          dpkg-deb --root-owner-group --build "$root" "hackdigest-$VERSION-linux-${{ matrix.arch }}.deb"
+          dpkg-deb -I "hackdigest-$VERSION-linux-${{ matrix.arch }}.deb"
+
+      # Depends sufficiency proof: install the deb into a clean Ubuntu
+      # 22.04 container where the ONLY extra packages are the test harness
+      # itself (xvfb to host the window). If a runtime FFI library were
+      # missing from Depends, apt would fail to resolve — and if the app
+      # still could not start with what Depends pulled in, the launch
+      # check below dies. The deep API/frontend probe already ran on the
+      # runner; this asserts the deb installs and boots with declared deps
+      # alone (Debian arch names differ from the asset naming: amd64/arm64).
+      - name: deb Depends test (clean ubuntu:22.04 container)
+        run: |
+          set -euo pipefail
+          deb="hackdigest-$VERSION-linux-${{ matrix.arch }}.deb"
+          docker run --rm -v "$PWD:/work" -w /work -e DEBIAN_FRONTEND=noninteractive \
+            ubuntu:22.04 bash -euc '
+            apt-get update -qq
+            apt-get install -y --no-install-recommends "./'"$deb"'" xvfb
+            test -x /opt/hackdigest/bin/HackDigest
+            test -x /usr/bin/hackdigest
+            test -f /usr/share/applications/hackdigest.desktop
+            test -f /usr/share/icons/hicolor/256x256/apps/hackdigest.png
+            mkdir -p /tmp/hd-data
+            export WEBKIT_DISABLE_DMABUF_RENDERER=1
+            export HACKDIGEST_DATA_DIR=/tmp/hd-data GLAZE_API_TOKEN=deb-smoke
+            timeout 30 xvfb-run -a /usr/bin/hackdigest >/tmp/hd-deb-smoke.log 2>&1 &
+            app_pid=$!
+            sleep 15
+            if kill -0 "$app_pid" 2>/dev/null; then
+              echo "deb install: app process alive after 15s with declared deps only"
+            else
+              echo "::error::app died under declared Depends only; smoke log:"
+              cat /tmp/hd-deb-smoke.log
+              exit 1
+            fi
+          '
+
+      # Optional-family format, x64 only. appimagetool from its official
+      # continuous release, verified against the sha256 digest GitHub
+      # computes for the asset. APPIMAGE_EXTRACT_AND_RUN keeps everything
+      # working on FUSE-less runners (tool build, self-check, smoke).
+      # Like the tar.gz and deb, the AppImage relies on the system
+      # WebKitGTK — it bundles the app, not the desktop stack.
+      - name: Package AppImage (x64)
+        if: matrix.arch == 'x64'
+        run: |
+          set -euo pipefail
+          asset="appimagetool-x86_64.AppImage"
+          api_url="https://api.github.com/repos/AppImage/appimagetool/releases/tags/continuous"
+          expected="$(curl -fsSL "$api_url" | jq -r ".assets[] | select(.name == \"$asset\") | .digest" | sed 's/^sha256://')"
+          curl -fsSL -o "$asset" "https://github.com/AppImage/appimagetool/releases/download/continuous/$asset"
+          actual="$(sha256sum "$asset" | awk '{print $1}')"
+          if [ -z "$expected" ] || [ "$actual" != "$expected" ]; then
+            echo "::error::appimagetool checksum mismatch (expected ${expected:-none}, got $actual)"
+            exit 1
+          fi
+          chmod +x "$asset"
+          export APPIMAGE_EXTRACT_AND_RUN=1
+          "$asset" --version | grep -q appimagetool || { echo "::error::appimagetool does not run"; exit 1; }
+
+          appdir="$(mktemp -d)/HackDigest.AppDir"
+          mkdir -p "$appdir/usr/bin" \
+                   "$appdir/usr/share/applications" \
+                   "$appdir/usr/share/icons/hicolor/256x256/apps" \
+                   "$appdir/opt/hackdigest"
+          cp -R dist/. "$appdir/opt/hackdigest/"
+          cat > "$appdir/usr/bin/hackdigest" <<'EOF'
+          #!/bin/sh
+          HERE="$(dirname "$(readlink -f "$0")")"
+          exec "$HERE/../../opt/hackdigest/bin/HackDigest" "$@"
+          EOF
+          chmod 755 "$appdir/usr/bin/hackdigest"
+          cat > "$appdir/AppRun" <<'EOF'
+          #!/bin/sh
+          HERE="$(dirname "$(readlink -f "$0")")"
+          exec "$HERE/usr/bin/hackdigest" "$@"
+          EOF
+          chmod 755 "$appdir/AppRun"
+          cat > "$appdir/hackdigest.desktop" <<'EOF'
+          [Desktop Entry]
+          Type=Application
+          Name=HackDigest
+          GenericName=Hacker News reader
+          Comment=Hacker News with built-in translation and AI digests
+          Exec=hackdigest
+          Icon=hackdigest
+          Terminal=false
+          Categories=Network;Utility;
+          EOF
+          cp "$appdir/hackdigest.desktop" "$appdir/usr/share/applications/hackdigest.desktop"
+          convert icon-1024.png -resize 256x256 "$appdir/hackdigest.png"
+          cp "$appdir/hackdigest.png" "$appdir/usr/share/icons/hicolor/256x256/apps/hackdigest.png"
+          ln -s hackdigest.png "$appdir/.DirIcon"
+          "$asset" --no-appstream "$appdir" "hackdigest-$VERSION-linux-x64.AppImage"
+
+      - name: AppImage smoke (x64)
+        if: matrix.arch == 'x64'
+        run: |
+          set -euo pipefail
+          export WEBKIT_DISABLE_DMABUF_RENDERER=1 APPIMAGE_EXTRACT_AND_RUN=1
+          data_dir="$(mktemp -d)"
+          export HACKDIGEST_DATA_DIR="$data_dir" GLAZE_API_TOKEN=smoke-token
+          app="hackdigest-$VERSION-linux-x64.AppImage"
+          setsid xvfb-run -a "./$app" &
+          run_pid=$!
+          trap 'kill -9 -- "-$run_pid" 2>/dev/null || true' exit
+          health_port=""
+          for _ in $(seq 1 15); do
+            sleep 2
+            kill -0 "$run_pid" 2>/dev/null || { echo "::error::AppImage exited early"; exit 1; }
+            for p in $(lsof -iTCP -sTCP:LISTEN -P -n 2>/dev/null | grep -oE ':[0-9]+' | tr -d ':' | sort -u || true); do
+              if curl -fsS -m 5 -H "X-Glaze-Token: smoke-token" "http://127.0.0.1:$p/api/health" 2>/dev/null | grep -q '"ok":true'; then
+                health_port="$p"
+                break
+              fi
+            done
+            [ -n "$health_port" ] && break
+          done
+          [ -n "$health_port" ] || { echo "::error::AppImage never answered api/health"; exit 1; }
+          code="$(curl -s -o /dev/null -w '%{http_code}' -m 5 "http://127.0.0.1:$health_port/")"
+          [ "$code" = "200" ] || { echo "::error::frontend returned $code"; exit 1; }
 
       - uses: actions/upload-artifact@v4
         with:
-          name: linux
-          path: hackdigest-*-linux-x64.tar.gz
+          name: linux-${{ matrix.arch }}
+          path: |
+            hackdigest-*-linux-${{ matrix.arch }}.tar.gz
+            hackdigest-*-linux-${{ matrix.arch }}.deb
+            hackdigest-*-linux-x64.AppImage
           if-no-files-found: error
 
   windows:

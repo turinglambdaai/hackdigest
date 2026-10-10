@@ -15,7 +15,7 @@ Hacker News 大概是互联网上最好的技术首页 —— 但对数以百万
 | 平台 | 产物 |
 |---|---|
 | macOS（Apple Silicon / Intel） | `hackdigest-<version>-macos-<arch>.dmg` + 便携 `.zip` |
-| Linux（x64） | `hackdigest-<version>-linux-x64.tar.gz` |
+| Linux（x64 / arm64） | `hackdigest-<version>-linux-<arch>.tar.gz` + `.deb`（x64 / arm64）+ `.AppImage`（x64） |
 | Windows 10/11（x64） | `hackdigest-<version>-windows-x64.msi` + 便携 `.zip` |
 
 > macOS 构建为 ad-hoc 签名、未公证：首次启动请右键 → 打开。Windows MSI 未签名，首次安装时 SmartScreen 可能告警 —— 选择「仍要运行」。

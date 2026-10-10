@@ -7,6 +7,37 @@ releases and tags were withdrawn.
 
 ## [Unreleased]
 
+## 0.2.0 - 2026-10-10
+
+Linux packaging parity: the Linux line gets first-class installer assets,
+matching the family bar on macOS and Windows. Nothing about the update feed
+or the in-app updater changes — these are installer assets published beside
+the portable tar.gz.
+
+### Added
+
+- Linux `.deb` packages for x64 and arm64, hand-rolled with `dpkg-deb`:
+  the app installs to `/opt/hackdigest` with a `hackdigest` launcher on
+  `PATH`, a desktop menu entry, and hicolor icons. `Depends` names what
+  the runtime actually FFI-loads (WebKitGTK, GTK 3, OpenSSL 3 for the
+  updater's signature checks, xdg-utils) instead of a laundry list, and
+  release CI installs the package into a clean `ubuntu:22.04` container
+  to prove the dependency set is sufficient.
+- Linux AppImage (x64), assembled with `appimagetool` from the same
+  distribution directory — same system-WebKitGTK requirement as the
+  tar.gz and deb, so it stays honest about what it bundles.
+- Linux arm64 builds: the release pipeline now runs its Linux leg on a
+  native arm64 runner, shipping `hackdigest-<version>-linux-arm64.tar.gz`
+  and `.deb` beside the x64 ones. Arm64 is an installer asset only for
+  now — the signed update feed still carries the x64 tar.gz.
+
+### Changed
+
+- Release assets follow the family naming on Linux too:
+  `hackdigest-<version>-linux-<arch>.<ext>` now covers `.tar.gz`, `.deb`
+  and `.AppImage`, all covered by `SHA256SUMS` and build-provenance
+  attestations.
+
 ## 0.1.0 - 2026-10-10
 
 The in-app updater (R3 of the Glaze migration) and the 0.x epoch reset:
