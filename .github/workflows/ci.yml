@@ -41,5 +41,10 @@ jobs:
       - name: Install glaze
         run: raco pkg install --auto --no-docs --skip-installed git+https://github.com/turinglambdaai/glaze
 
+      # the updater verifies manifests through the crypto package (libcrypto
+      # FFI bundled with the Racket distribution)
+      - name: Install crypto
+        run: raco pkg install --auto --no-docs --skip-installed crypto
+
       - name: Backend tests
         run: raco test backend/

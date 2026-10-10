@@ -7,6 +7,43 @@ releases and tags were withdrawn.
 
 ## [Unreleased]
 
+## 1.1.0 - 2026-10-10
+
+The in-app updater (R3 of the Glaze migration): HackDigest can now update
+itself end to end, closing the gap v1.0.1 documented as "open the release
+page".
+
+### Added
+
+- Full update flow on portable installs: the backend fetches the release's
+  Ed25519-signed `update-manifest.json`, verifies it against the embedded
+  key, downloads this platform's artifact with a progress indicator, checks
+  size and SHA-256 against the signed feed, and swaps the install:
+  - macOS portable `.app`: ditto-unpack, atomic bundle swap with a
+    `.old` backup, automatic relaunch.
+  - Windows portable zip: unpack beside the install dir, `cmd` handover
+    (waits for the app to exit, `.old` swap, restart); failures leave a
+    marker that the next launch reports.
+  - Linux: the downloaded tar.gz is revealed in the file manager — extract
+    it over the app folder by hand (family rule for archive installs).
+- Settings → About now offers the same flow with live progress; the
+  startup banner drives it too.
+- Release pipeline: `scripts/make-update-manifest.sh` signs the update
+  feed from the portable artifacts before publishing (key supplied via the
+  `UPDATE_ED25519_PRIVATE_KEY` secret; releases without it fall back to
+  release-page-only updates), and the release workflow gained a
+  concurrency group.
+
+### Changed
+
+- Updating honestly, by install type: portable macOS/Windows installs
+  update in place; DMG/MSI installs point at the release page (the app
+  cannot rewrite itself there without elevation); Linux downloads and
+  reveals the archive. The check falls back to the v1.0-style
+  release-page behavior whenever no signed manifest is published.
+- Settings → About shows the packaged version reported by the backend
+  (it previously showed a stale build number).
+
 ## 1.0.1 - 2026-10-09
 
 Packaging-hygiene release — no app-behavior changes beyond honest update

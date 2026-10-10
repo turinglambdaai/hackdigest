@@ -25,11 +25,17 @@
          "platform.rkt"
          "settings-rpc.rkt"
          "translate.rkt"
-         "update-check.rkt")
+         "update-check.rkt"
+         "update.rkt")
 
 ;; Keep in sync with package.json and CHANGELOG.md; the release workflow's
 ;; validate job fails the tag if they disagree.
-(define app-version "1.0.1")
+(define app-version "1.1.0")
+
+;; HACKDIGEST_FAKE_VERSION overrides the reported version so the real
+;; update flow against a published release can be exercised locally.
+(current-app-version
+ (or (getenv "HACKDIGEST_FAKE_VERSION") app-version))
 
 (define-runtime-path frontend-dist "../apps/desktop/dist")
 
@@ -39,6 +45,18 @@
 ;; read it through this box so impl functions stay directly testable.
 (define db-box (box #f))
 (define (current-db) (unbox db-box))
+
+;; Sticky staged-rollout bucket 0..99 for the updater, persisted in kv so
+;; an installation keeps its bucket across launches.
+(define (seed-rollout-bucket!)
+  (define existing
+    (let ([v (kv-get (current-db) "rollout-bucket")])
+      (and v (string->number v))))
+  (if (and existing (exact-integer? existing) (<= 0 existing 99))
+      (current-rollout-bucket existing)
+      (let ([bucket (random 100)])
+        (kv-set! (current-db) "rollout-bucket" (number->string bucket))
+        (current-rollout-bucket bucket))))
 
 ;; ---- page-jsexpr → impl shims ----------------------------------------------
 
@@ -322,9 +340,36 @@
    (open-browser url)
    (hasheq 'ok #t)]
 
+  ;; ---- R3: signed update feed — check / download / state / install ----
+
   [(POST "api/update/check")
    (update-check-r)
-   (hasheq 'update (or (check-latest-release app-version) 'null))])
+   (check-response)]
+
+  ;; Errors land in the polled state instead of an RPC error, so the
+  ;; frontend has a single failure channel (family pattern).
+  [(POST "api/update/start")
+   (update-start-r)
+   (with-handlers ([exn:fail?
+                    (lambda (e)
+                      (set-update-error! (exn-message e))
+                      (hasheq 'ok #f 'message (exn-message e)))])
+     (start-download!)
+     (hasheq 'ok #t))]
+
+  [(POST "api/update/state")
+   (update-state-r)
+   (update-state-snapshot)]
+
+  ;; macOS/Windows answer first and exit on a delay so the handover
+  ;; (bundle swap / cmd script) completes; Linux reveals the archive.
+  [(POST "api/update/install")
+   (update-install-r)
+   (with-handlers ([exn:fail?
+                    (lambda (e)
+                      (set-update-error! (exn-message e))
+                      (hasheq 'ok #f 'message (exn-message e)))])
+     (install-downloaded!))])
 
 (module+ main
   (unless (single-instance? "hackdigest")
@@ -333,6 +378,8 @@
 
   (displayln (migrate-tauri-data!))
   (set-box! db-box (open-database (app-data-dir)))
+  (seed-rollout-bucket!)
+  (surface-install-failure!)
 
   (run-app
    #:public-dir frontend-dist

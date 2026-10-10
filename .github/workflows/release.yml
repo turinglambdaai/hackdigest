@@ -5,6 +5,12 @@ on:
     tags: ["v*"]
   workflow_dispatch:
 
+# One release pipeline per tag at a time; never cancel a publishing run
+# (a half-published release is worse than a queued one).
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
 permissions:
   contents: write
   id-token: write
@@ -77,6 +83,11 @@ jobs:
 
       - name: Install glaze
         run: raco pkg install --auto --no-docs --skip-installed git+https://github.com/turinglambdaai/glaze
+
+      # the updater verifies manifests through the crypto package (libcrypto
+      # FFI bundled with the Racket distribution)
+      - name: Install crypto
+        run: raco pkg install --auto --no-docs --skip-installed crypto
 
       - name: App icon (icns from icon-1024.png)
         run: |
@@ -199,6 +210,11 @@ jobs:
       - name: Install glaze
         run: raco pkg install --auto --no-docs --skip-installed git+https://github.com/turinglambdaai/glaze
 
+      # the updater verifies manifests through the crypto package (libcrypto
+      # FFI bundled with the Racket distribution)
+      - name: Install crypto
+        run: raco pkg install --auto --no-docs --skip-installed crypto
+
       - name: Package distribution directory
         run: |
           raco glaze build \
@@ -297,6 +313,11 @@ jobs:
 
       - name: Install glaze
         run: raco pkg install --auto --no-docs --skip-installed git+https://github.com/turinglambdaai/glaze
+
+      # the updater verifies manifests through the crypto package (libcrypto
+      # FFI bundled with the Racket distribution)
+      - name: Install crypto
+        run: raco pkg install --auto --no-docs --skip-installed crypto
 
       - name: Install WiX 5.0.2
         shell: pwsh
@@ -439,6 +460,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      # Signing the update feed needs the same racket the app ships with
+      # (glaze/update schema structs + the crypto package's libcrypto FFI).
+      - uses: Bogdanp/setup-racket@v1.15
+        with:
+          architecture: x64
+          version: stable
+          distribution: full
+
+      - name: Install glaze and crypto
+        run: raco pkg install --auto --no-docs --skip-installed git+https://github.com/turinglambdaai/glaze crypto
+
       - uses: actions/download-artifact@v4
         with:
           path: dist
@@ -450,6 +483,23 @@ jobs:
           find dist -mindepth 2 -type f -exec mv {} dist/ \;
           find dist -mindepth 1 -maxdepth 1 -type d -exec rm -rf {} +
           ls -la dist/
+      - name: Sign the update feed (update-manifest.json)
+        env:
+          UPDATE_ED25519_PRIVATE_KEY: ${{ secrets.UPDATE_ED25519_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+          case "$GITHUB_REF_NAME" in
+            v*)
+              if [[ -n "${UPDATE_ED25519_PRIVATE_KEY:-}" ]]; then
+                KEY_PEM="$RUNNER_TEMP/update-signing-key.pem"
+                printf '%s\n' "$UPDATE_ED25519_PRIVATE_KEY" > "$KEY_PEM"
+                scripts/make-update-manifest.sh "$GITHUB_REF_NAME" dist "$KEY_PEM"
+              else
+                echo "::warning::UPDATE_ED25519_PRIVATE_KEY not set — release ships without an update manifest (clients fall back to release-page updates)"
+              fi
+              ;;
+            *) echo "non-tag ref $GITHUB_REF_NAME: skipping update feed signing" ;;
+          esac
       - name: Ensure SHA256SUMS
         run: |
           cd dist

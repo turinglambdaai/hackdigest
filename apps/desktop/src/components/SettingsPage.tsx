@@ -15,10 +15,12 @@ import {
 import { useI18n } from '../i18n';
 import { useSettings, useTrans } from '../state/store';
 import { openExternal } from '../lib/hooks';
-import { checkForUpdate } from '../lib/updater';
+import { checkForUpdate, type UpdateInfo } from '../lib/updater';
+import { useUpdateFlow } from './UpdateBanner';
 import ShortcutSettings from './ShortcutSettings';
 
-const APP_VERSION = '0.5.1';
+// Fallback only; the backend's /api/health version overrides it.
+const APP_VERSION = '1.1.0';
 const REPO_URL = 'https://github.com/turinglambdaai/hackdigest';
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -51,8 +53,22 @@ export default function SettingsPage() {
   const [testMsg, setTestMsg] = useState('');
   const [cacheCleared, setCacheCleared] = useState(false);
   const [updateState, setUpdateState] = useState<'idle' | 'checking' | 'none' | 'found' | 'error'>('idle');
+  const [update, setUpdate] = useState<UpdateInfo | null>(null);
+  const flow = useUpdateFlow(update);
+  const [appVersion, setAppVersion] = useState(APP_VERSION);
   const [hostedBusy, setHostedBusy] = useState(false);
   const [hostedMsg, setHostedMsg] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
+
+  // The backend reports the real packaged version (APP_VERSION above only
+  // covers plain-browser dev where no backend is up).
+  useEffect(() => {
+    fetch('/api/health')
+      .then((r) => r.json())
+      .then((j) => {
+        if (j && typeof j.version === 'string') setAppVersion(j.version);
+      })
+      .catch(() => {});
+  }, []);
 
   const provider = PROVIDERS.find((p) => p.id === settings.providerId);
   const llm = settings.llm ?? { baseUrl: '', apiKey: '', model: '' };
@@ -307,29 +323,69 @@ export default function SettingsPage() {
 
       <Section title={t.about}>
         <Row label={t.version}>
-          <span className="text-sm text-mute">v{APP_VERSION}</span>
+          <span className="text-sm text-mute">v{appVersion}</span>
         </Row>
-        <div className="mb-3 flex items-center gap-3">
+        <div className="mb-3 flex flex-wrap items-center gap-3">
           <button
             className="rounded-lg bg-accent px-3 py-1.5 text-xs font-medium text-white hover:opacity-90 disabled:opacity-50"
             disabled={updateState === 'checking' || updateState === 'found'}
             onClick={async () => {
               setUpdateState('checking');
               try {
-                const update = await checkForUpdate();
-                if (!update) {
+                const found = await checkForUpdate();
+                if (!found) {
                   setUpdateState('none');
                   return;
                 }
+                setUpdate(found);
                 setUpdateState('found');
-                await openExternal(update.url);
+                if (found.mode === 'page') await openExternal(found.url);
               } catch {
                 setUpdateState('error');
               }
             }}
           >
-            {updateState === 'found' ? t.updateNow : t.checkUpdate}
+            {updateState === 'found' ? t.updateAvailable : t.checkUpdate}
           </button>
+          {updateState === 'found' && update && update.mode !== 'page' && flow.phase === 'found' && (
+            <button
+              className="rounded-lg bg-accent px-3 py-1.5 text-xs font-medium text-white hover:opacity-90"
+              onClick={() => void flow.download()}
+            >
+              {t.updateDownload}
+            </button>
+          )}
+          {updateState === 'found' && update && flow.phase === 'downloading' && (
+            <span className="text-xs text-mute">{t.updateDownloading.replace('{percent}', String(flow.percent))}</span>
+          )}
+          {updateState === 'found' && update && flow.phase === 'downloaded' && !update.mode.includes('manual') && (
+            <button
+              className="rounded-lg bg-accent px-3 py-1.5 text-xs font-medium text-white hover:opacity-90"
+              onClick={() => void flow.install()}
+            >
+              {t.updateReadyInstall}
+            </button>
+          )}
+          {updateState === 'found' && update && flow.phase === 'downloaded' && update.mode === 'manual' && (
+            <>
+              <span className="text-xs text-mute">{t.updateManualHint}</span>
+              <button
+                className="rounded-lg bg-accent px-3 py-1.5 text-xs font-medium text-white hover:opacity-90"
+                onClick={() => void flow.install()}
+              >
+                {t.updateOpenFolder}
+              </button>
+            </>
+          )}
+          {updateState === 'found' && update && flow.phase === 'installing' && (
+            <span className="text-xs text-mute">{t.updateInstalling}</span>
+          )}
+          {updateState === 'found' && update && flow.phase === 'error' && (
+            <span className="text-xs text-red-600 dark:text-red-400">{t.updateFailed}</span>
+          )}
+          {updateState === 'found' && update && update.mode === 'page' && flow.phase === 'found' && (
+            <span className="text-xs text-mute">{t.updatePageHint}</span>
+          )}
           {updateState === 'none' && <span className="text-xs text-green-600 dark:text-green-400">{t.upToDate}</span>}
           {updateState === 'error' && <span className="text-xs text-red-600 dark:text-red-400">{t.updateFailed}</span>}
         </div>
