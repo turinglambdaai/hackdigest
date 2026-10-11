@@ -81,9 +81,6 @@ jobs:
           version: stable
           distribution: full
 
-      - name: Install keel
-        run: raco pkg install --auto --no-docs --skip-installed git+https://github.com/turinglambdaai/keel
-
       - name: Install glaze
         run: raco pkg install --auto --no-docs --skip-installed git+https://github.com/turinglambdaai/glaze
 
@@ -241,9 +238,6 @@ jobs:
           architecture: ${{ matrix.racket-arch }}
           version: stable
           distribution: full
-
-      - name: Install keel
-        run: raco pkg install --auto --no-docs --skip-installed git+https://github.com/turinglambdaai/keel
 
       - name: Install glaze
         run: raco pkg install --auto --no-docs --skip-installed git+https://github.com/turinglambdaai/glaze
@@ -663,9 +657,6 @@ jobs:
           version: stable
           distribution: full
 
-      - name: Install keel
-        run: raco pkg install --auto --no-docs --skip-installed git+https://github.com/turinglambdaai/keel
-
       - name: Install glaze
         run: raco pkg install --auto --no-docs --skip-installed git+https://github.com/turinglambdaai/glaze
 
@@ -837,10 +828,6 @@ jobs:
 
       - name: Install glaze and crypto
         run: |
-          # glaze depends on keel, which is git-only (not on any catalog) —
-          # install it explicitly first, exactly like the build jobs do,
-          # or raco's dependency resolution dies on the catalog lookup.
-          raco pkg install --auto --no-docs --skip-installed git+https://github.com/turinglambdaai/keel
           raco pkg install --auto --no-docs --skip-installed git+https://github.com/turinglambdaai/glaze crypto
 
       - uses: actions/download-artifact@v4
