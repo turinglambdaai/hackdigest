@@ -81,6 +81,9 @@ jobs:
           version: stable
           distribution: full
 
+      - name: Install keel
+        run: raco pkg install --auto --no-docs --skip-installed git+https://github.com/turinglambdaai/keel
+
       - name: Install glaze
         run: raco pkg install --auto --no-docs --skip-installed git+https://github.com/turinglambdaai/glaze
 
@@ -170,12 +173,24 @@ jobs:
           test -d /tmp/hd-dmg-verify/HackDigest.app
           hdiutil detach /tmp/hd-dmg-verify
 
+      - name: Per-asset .sha256 sidecars
+        run: |
+          set -euo pipefail
+          for f in hackdigest-$VERSION-macos-*; do
+            case "$f" in
+              *.sha256) ;;
+              *) [ -f "$f" ] || continue; [ -f "$f.sha256" ] || shasum -a 256 "$f" > "$f.sha256" ;;
+            esac
+          done
+
       - uses: actions/upload-artifact@v4
         with:
           name: macos-${{ matrix.arch }}
           path: |
             hackdigest-*-macos-${{ matrix.arch }}.dmg
+            hackdigest-*-macos-${{ matrix.arch }}.dmg.sha256
             hackdigest-*-macos-${{ matrix.arch }}.zip
+            hackdigest-*-macos-${{ matrix.arch }}.zip.sha256
           if-no-files-found: error
 
   linux:
@@ -219,13 +234,16 @@ jobs:
       - name: Install WebKit/GTK runtime dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends libwebkit2gtk-4.1-dev libgtk-3-dev xvfb imagemagick
+          sudo apt-get install -y --no-install-recommends libwebkit2gtk-4.1-dev libgtk-3-dev xvfb imagemagick rpm
 
       - uses: Bogdanp/setup-racket@v1.15
         with:
           architecture: ${{ matrix.racket-arch }}
           version: stable
           distribution: full
+
+      - name: Install keel
+        run: raco pkg install --auto --no-docs --skip-installed git+https://github.com/turinglambdaai/keel
 
       - name: Install glaze
         run: raco pkg install --auto --no-docs --skip-installed git+https://github.com/turinglambdaai/glaze
@@ -405,17 +423,104 @@ jobs:
             fi
           '
 
-      # Optional-family format, x64 only. appimagetool from its official
-      # continuous release, verified against the sha256 digest GitHub
-      # computes for the asset. APPIMAGE_EXTRACT_AND_RUN keeps everything
-      # working on FUSE-less runners (tool build, self-check, smoke).
-      # Like the tar.gz and deb, the AppImage relies on the system
-      # WebKitGTK — it bundles the app, not the desktop stack.
-      - name: Package AppImage (x64)
-        if: matrix.arch == 'x64'
+      # Hand-rolled rpm, mirroring the deb layout and rivet's rpmbuild
+      # recipe: a generated spec, a STAGED tree copied into the buildroot
+      # in %install, no %dist tag (one rpm validates on any rpm-based
+      # distribution), and the libtinfo exclude that keeps the Ubuntu-built
+      # Racket runtime installable on Fedora. Requires names what the app
+      # FFI-loads at runtime — the same set the deb Depends declares
+      # (Fedora spellings: gtk3, webkit2gtk4.1, openssl-libs).
+      - name: Package rpm
         run: |
           set -euo pipefail
-          asset="appimagetool-x86_64.AppImage"
+          case "${{ matrix.arch }}" in
+            x64)   rpm_arch=x86_64 ;;
+            arm64) rpm_arch=aarch64 ;;
+            *) echo "::error::no rpm arch mapping for ${{ matrix.arch }}"; exit 1 ;;
+          esac
+          topdir="$PWD/.rpm-build"
+          rm -rf "$topdir"
+          mkdir -p "$topdir/SPECS" \
+                   "$topdir/STAGED/opt/hackdigest" \
+                   "$topdir/STAGED/usr/bin" \
+                   "$topdir/STAGED/usr/share/applications" \
+                   "$topdir/STAGED/usr/share/pixmaps"
+          cp -R dist/. "$topdir/STAGED/opt/hackdigest/"
+          cat > "$topdir/STAGED/usr/bin/hackdigest" <<'EOF'
+          #!/bin/sh
+          exec /opt/hackdigest/bin/HackDigest "$@"
+          EOF
+          chmod 755 "$topdir/STAGED/usr/bin/hackdigest"
+          convert icon-1024.png -resize 256x256 "$topdir/STAGED/usr/share/pixmaps/hackdigest.png"
+          cat > "$topdir/STAGED/usr/share/applications/hackdigest.desktop" <<'EOF'
+          [Desktop Entry]
+          Type=Application
+          Name=HackDigest
+          GenericName=Hacker News reader
+          Comment=Hacker News with built-in translation and AI digests
+          Exec=/usr/bin/hackdigest
+          Icon=hackdigest
+          Terminal=false
+          Categories=Network;Utility;
+          EOF
+          cat > "$topdir/SPECS/hackdigest.spec" <<'EOF'
+          %global __requires_exclude ^libtinfo\\.so\\.6\\(NCURSES6_TINFO_.*$
+          Name:           hackdigest
+          Version:        __HD_VERSION__
+          Release:        1
+          Summary:        Hacker News reader with built-in translation and AI digests
+          License:        AGPL-3.0
+          URL:            https://github.com/turinglambdaai/hackdigest
+          BuildArch:      __HD_ARCH__
+          Requires:       gtk3
+          Requires:       webkit2gtk4.1
+          Requires:       openssl-libs
+          Requires:       xdg-utils
+
+          %description
+          Hacker News in your language: on-demand translation, three-layer AI
+          digests, and a keyboard-first UI served by a Racket (Glaze) backend
+          in a native WebKitGTK window.
+
+          %prep
+
+          %build
+
+          %install
+          rm -rf "%{buildroot}"
+          mkdir -p "%{buildroot}"
+          cp -a "%{_topdir}/STAGED/." "%{buildroot}/"
+
+          %files
+          %dir "/opt/hackdigest"
+          "/opt/hackdigest/*"
+          "/usr/bin/hackdigest"
+          "/usr/share/applications/hackdigest.desktop"
+          "/usr/share/pixmaps/hackdigest.png"
+          EOF
+          sed -i "s/__HD_VERSION__/$VERSION/; s/__HD_ARCH__/$rpm_arch/" "$topdir/SPECS/hackdigest.spec"
+          rpmbuild -bb --define="_topdir $topdir" \
+                        --define="_rpmdir $PWD" \
+                        --define="_build_name_fmt %{NAME}-%{VERSION}-%{RELEASE}.%{ARCH}.rpm" \
+                        "$topdir/SPECS/hackdigest.spec"
+          mv "hackdigest-$VERSION-1.$rpm_arch.rpm" "hackdigest-$VERSION-1-linux-${{ matrix.arch }}.rpm"
+          rm -rf "$topdir"
+
+      # Optional-family format on both architectures. appimagetool from its
+      # official continuous release, verified against the sha256 digest
+      # GitHub computes for the per-arch asset. APPIMAGE_EXTRACT_AND_RUN
+      # keeps everything working on FUSE-less runners (tool build,
+      # self-check, smoke). Like the tar.gz and deb, the AppImage relies on
+      # the system WebKitGTK — it bundles the app, not the desktop stack.
+      - name: Package AppImage
+        run: |
+          set -euo pipefail
+          case "${{ matrix.arch }}" in
+            x64)   tool_arch=x86_64 ;;
+            arm64) tool_arch=aarch64 ;;
+            *) echo "::error::no appimagetool arch mapping for ${{ matrix.arch }}"; exit 1 ;;
+          esac
+          asset="appimagetool-$tool_arch.AppImage"
           api_url="https://api.github.com/repos/AppImage/appimagetool/releases/tags/continuous"
           expected="$(curl -fsSL "$api_url" | jq -r ".assets[] | select(.name == \"$asset\") | .digest" | sed 's/^sha256://')"
           curl -fsSL -o "$asset" "https://github.com/AppImage/appimagetool/releases/download/continuous/$asset"
@@ -461,16 +566,15 @@ jobs:
           convert icon-1024.png -resize 256x256 "$appdir/hackdigest.png"
           cp "$appdir/hackdigest.png" "$appdir/usr/share/icons/hicolor/256x256/apps/hackdigest.png"
           ln -s hackdigest.png "$appdir/.DirIcon"
-          ./"$asset" --no-appstream "$appdir" "hackdigest-$VERSION-linux-x64.AppImage"
+          ./"$asset" --no-appstream "$appdir" "hackdigest-$VERSION-linux-${{ matrix.arch }}.AppImage"
 
-      - name: AppImage smoke (x64)
-        if: matrix.arch == 'x64'
+      - name: AppImage smoke
         run: |
           set -euo pipefail
           export WEBKIT_DISABLE_DMABUF_RENDERER=1 APPIMAGE_EXTRACT_AND_RUN=1
           data_dir="$(mktemp -d)"
           export HACKDIGEST_DATA_DIR="$data_dir" GLAZE_API_TOKEN=smoke-token
-          app="hackdigest-$VERSION-linux-x64.AppImage"
+          app="hackdigest-$VERSION-linux-${{ matrix.arch }}.AppImage"
           setsid xvfb-run -a "./$app" &
           run_pid=$!
           trap 'kill -9 -- "-$run_pid" 2>/dev/null || true' exit
@@ -490,13 +594,39 @@ jobs:
           code="$(curl -s -o /dev/null -w '%{http_code}' -m 5 "http://127.0.0.1:$health_port/")"
           [ "$code" = "200" ] || { echo "::error::frontend returned $code"; exit 1; }
 
+      # Portable zip: same self-contained tree the tar.gz carries.
+      - name: Portable zip (self-contained folder at the archive root)
+        run: |
+          set -euo pipefail
+          stage="$(mktemp -d)/HackDigest"
+          mkdir -p "$stage"
+          cp -R dist/. "$stage/"
+          ( cd "$(dirname "$stage")" && zip -qry "$GITHUB_WORKSPACE/hackdigest-$VERSION-linux-${{ matrix.arch }}.zip" HackDigest )
+
+      - name: Per-asset .sha256 sidecars
+        run: |
+          set -euo pipefail
+          for f in hackdigest-$VERSION-linux-*; do
+            case "$f" in
+              *.sha256) ;;
+              *) [ -f "$f" ] || continue; [ -f "$f.sha256" ] || sha256sum "$f" > "$f.sha256" ;;
+            esac
+          done
+
       - uses: actions/upload-artifact@v4
         with:
           name: linux-${{ matrix.arch }}
           path: |
             hackdigest-*-linux-${{ matrix.arch }}.tar.gz
+            hackdigest-*-linux-${{ matrix.arch }}.tar.gz.sha256
             hackdigest-*-linux-${{ matrix.arch }}.deb
-            hackdigest-*-linux-x64.AppImage
+            hackdigest-*-linux-${{ matrix.arch }}.deb.sha256
+            hackdigest-*-linux-*.rpm
+            hackdigest-*-linux-*.rpm.sha256
+            hackdigest-*-linux-${{ matrix.arch }}.AppImage
+            hackdigest-*-linux-${{ matrix.arch }}.AppImage.sha256
+            hackdigest-*-linux-${{ matrix.arch }}.zip
+            hackdigest-*-linux-${{ matrix.arch }}.zip.sha256
           if-no-files-found: error
 
   windows:
@@ -532,6 +662,9 @@ jobs:
         with:
           version: stable
           distribution: full
+
+      - name: Install keel
+        run: raco pkg install --auto --no-docs --skip-installed git+https://github.com/turinglambdaai/keel
 
       - name: Install glaze
         run: raco pkg install --auto --no-docs --skip-installed git+https://github.com/turinglambdaai/glaze
@@ -667,12 +800,23 @@ jobs:
           Compress-Archive -Path $stage -DestinationPath "hackdigest-$env:VERSION-windows-x64.zip" -Force
           Remove-Item -Recurse -Force $stage
 
+      - name: Per-asset .sha256 sidecars
+        shell: bash
+        run: |
+          set -euo pipefail
+          for f in hackdigest-*-windows-x64.msi hackdigest-*-windows-x64.zip; do
+            [ -f "$f" ] || continue
+            sha256sum "$f" > "$f.sha256"
+          done
+
       - uses: actions/upload-artifact@v4
         with:
           name: windows
           path: |
             hackdigest-*-windows-x64.msi
+            hackdigest-*-windows-x64.msi.sha256
             hackdigest-*-windows-x64.zip
+            hackdigest-*-windows-x64.zip.sha256
           if-no-files-found: error
 
   release:

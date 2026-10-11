@@ -11,6 +11,7 @@
 #   <dist-dir>  directory containing the release artifacts:
 #                 hackdigest-<ver>-macos-arm64.zip   hackdigest-<ver>-macos-x64.zip
 #                 hackdigest-<ver>-windows-x64.zip   hackdigest-<ver>-linux-x64.tar.gz
+#                 hackdigest-<ver>-linux-arm64.tar.gz
 #   <key-path>  Ed25519 private key PEM or DER
 #               (default: $UPDATE_KEY_PATH, then
 #                ~/.hackdigest/update-signing-key.pem)
@@ -34,7 +35,8 @@ PKG_VERSION="$(node -p "require('$ROOT/package.json').version")"
 for artifact in "$DIST/hackdigest-$VERSION-macos-arm64.zip" \
                 "$DIST/hackdigest-$VERSION-macos-x64.zip" \
                 "$DIST/hackdigest-$VERSION-windows-x64.zip" \
-                "$DIST/hackdigest-$VERSION-linux-x64.tar.gz"; do
+                "$DIST/hackdigest-$VERSION-linux-x64.tar.gz" \
+                "$DIST/hackdigest-$VERSION-linux-arm64.tar.gz"; do
   [[ -f "$artifact" ]] || { echo "error: missing $artifact" >&2; exit 1; }
 done
 [[ -f "$KEY" ]] || {
@@ -142,7 +144,9 @@ cat > "$SCRIPT" <<'RKT'
                          (artifact 'windows 'x64
                                    (format "hackdigest-~a-windows-x64.zip" version) 'zip)
                          (artifact 'linux 'x64
-                                   (format "hackdigest-~a-linux-x64.tar.gz" version) 'targz))))
+                                   (format "hackdigest-~a-linux-x64.tar.gz" version) 'targz)
+                         (artifact 'linux 'arm64
+                                   (format "hackdigest-~a-linux-arm64.tar.gz" version) 'targz))))
 
 ;; update-manifest->payload-bytes validates the struct against the manifest
 ;; schema before signing, so a malformed manifest fails the release instead
@@ -171,7 +175,7 @@ cat > "$SCRIPT" <<'RKT'
   (lambda (out)
     (write-json wrapper out)
     (newline out)))
-(printf "manifest: ~a (4 artifacts, key-id ~a)\n" out-path key-id)
+(printf "manifest: ~a (5 artifacts, key-id ~a)\n" out-path key-id)
 RKT
 
 racket "$SCRIPT" "$VERSION" "$BASE_URL" "$DIST" "$ROOT" "$KEY" "$KEY_ID"

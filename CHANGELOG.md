@@ -7,6 +7,35 @@ releases and tags were withdrawn.
 
 ## [Unreleased]
 
+## 0.3.0 - 2026-10-11
+
+Linux packaging closes the family benchmark gap format-for-format, and every
+binary asset now carries a per-asset `.sha256` sidecar.
+
+### Added
+
+- Linux `.rpm` packages for x64 and arm64
+  (`hackdigest-<version>-1-linux-x86_64.rpm`, `...-aarch64.rpm`),
+  hand-rolled with `rpmbuild` from a generated spec that mirrors the deb
+  layout (`/opt/hackdigest`, a `hackdigest` launcher, desktop entry,
+  pixmaps icon) and rivet's recipe: no `%dist` tag and the libtinfo
+  dependency exclusion that keeps the Ubuntu-built Racket runtime
+  installable on Fedora. `Requires` names what the runtime FFI-loads
+  (gtk3, webkit2gtk4.1, openssl-libs, xdg-utils)
+- Linux `.zip` portable archives for both architectures — the same
+  self-contained tree the tar.gz carries
+- The AppImage now ships for arm64 too (per-arch `appimagetool` binary,
+  same digest-verified fetch), with the launch smoke running on both
+  architectures
+- The signed update feed carries a Linux arm64 tar.gz entry, so arm64
+  installs get in-app updates
+
+### Changed
+
+- Every binary asset on every platform ships a per-asset `.sha256`
+  sidecar (macOS dmg/zip, Windows msi/zip, and the full Linux set);
+  `SHA256SUMS` continues to aggregate them
+
 ## 0.2.0 - 2026-10-10
 
 Linux packaging parity: the Linux line gets first-class installer assets,
