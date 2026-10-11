@@ -497,7 +497,10 @@ jobs:
                         --define="_rpmdir $PWD" \
                         --define="_build_name_fmt %{NAME}-%{VERSION}-%{RELEASE}.%{ARCH}.rpm" \
                         "$topdir/SPECS/hackdigest.spec"
-          mv "hackdigest-$VERSION-1.$rpm_arch.rpm" "hackdigest-$VERSION-1-linux-${{ matrix.arch }}.rpm"
+          # Family naming carries the native rpm arch spelling
+          # (x86_64/aarch64), like the rivet-built rpms on
+          # taskly/brainfuel/payback.
+          mv "hackdigest-$VERSION-1.$rpm_arch.rpm" "hackdigest-$VERSION-1-linux-$rpm_arch.rpm"
           rm -rf "$topdir"
 
       # Optional-family format on both architectures. appimagetool from its
@@ -600,7 +603,7 @@ jobs:
       - name: Per-asset .sha256 sidecars
         run: |
           set -euo pipefail
-          for f in hackdigest-$VERSION-linux-*; do
+          for f in hackdigest-$VERSION*; do
             case "$f" in
               *.sha256) ;;
               *) [ -f "$f" ] || continue; [ -f "$f.sha256" ] || sha256sum "$f" > "$f.sha256" ;;
