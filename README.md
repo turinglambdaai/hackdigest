@@ -84,8 +84,10 @@ own key and nothing here applies — that path is free and unlimited, forever.
   license key — no setup, no keys. 7-day free trial per device, generous daily
   quotas, globally shared caches. Soft launch; sales start manual (lifetime /
   yearly keys), payment gateway lands next.
-- **Phase 3 — Mobile** (iOS / Android): the same TypeScript core, a phone
-  app, Pro licenses carry over.
+- **Phase 3 — Mobile** (iOS / iPadOS / Android, matching the family's
+  full-platform scope; a watchOS top-stories companion trails the phone
+  app): the same TypeScript core, phone and tablet apps, Pro licenses
+  carry over.
 
 ## Tech stack
 
