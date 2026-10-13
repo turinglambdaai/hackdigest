@@ -377,6 +377,12 @@
         (lambda (e)
           (state-set! 'phase "idle")
           (hasheq 'status "error" 'message (exn-message e)))])
+    ;; The manifest trust path starts at the URL: glaze's open-update-input
+    ;; enforces HTTPS-only for the same reason — TLS-only is not a scheme
+    ;; check, and a config override pointing at http:// would downgrade the
+    ;; whole chain silently.
+    (unless (string-prefix? (manifest-url) "https://")
+      (error 'perform-check! "update manifest URL must use HTTPS"))
     (define in (get-pure-port (string->url (manifest-url))
                               '("User-Agent: HackDigest-Updater/1")
                               #:redirections 10))
@@ -384,10 +390,22 @@
       (dynamic-wind
         void
         (lambda ()
-          ;; The manifest is small; bound it well above any realistic feed.
-          (define payload (port->bytes in))
-          (when (> (bytes-length payload) (* 4 1024 1024))
-            (error 'perform-check! "update manifest exceeds 4 MiB"))
+          ;; Bound the read, not just the verdict: checking the size after
+          ;; port->bytes would let a hostile server stream unbounded bytes
+          ;; into memory before the cap ever runs.
+          (define cap (* 4 1024 1024))
+          (define payload
+            (let loop ([acc (open-output-bytes)] [total 0])
+              (define buffer (make-bytes 65536))
+              (define count (read-bytes-avail! buffer in))
+              (cond
+                [(eof-object? count) (get-output-bytes acc)]
+                [else
+                 (define next (+ total count))
+                 (when (> next cap)
+                   (error 'perform-check! "update manifest exceeds 4 MiB"))
+                 (write-bytes buffer acc 0 count)
+                 (loop acc next)])))
           (verify-manifest-signature (open-input-bytes payload)))
         (lambda () (close-input-port in))))
     (define config
