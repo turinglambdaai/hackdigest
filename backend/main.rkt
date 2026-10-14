@@ -126,44 +126,44 @@
    (hasheq 'ok #t 'version app-version)]
 
   [(POST "api/kv/get")
-   (kv-get-r [key string?])
+   (kv-get-r [key GString])
    (hasheq 'value (nullable (kv-get (current-db) key)))]
 
   [(POST "api/kv/set")
-   (kv-set-r [key string?] [value string?])
+   (kv-set-r [key GString] [value GString])
    (kv-set! (current-db) key value)
    (hasheq 'ok #t)]
 
   [(POST "api/translations/get")
-   (translations-get [itemId exact-integer?] [lang string?])
+   (translations-get [itemId GInt64] [lang GString])
    (define-values (title text) (translation-get (current-db) itemId lang))
    (hasheq 'found (if (or title text) #t 'null)
            'title (nullable title)
            'text (nullable text))]
 
   [(POST "api/translations/get-batch")
-   (translations-get-batch-r [itemIds (listof exact-integer?)] [lang string?])
+   (translations-get-batch-r [itemIds (glist GInt64)] [lang GString])
    (hasheq 'rows
            (for/list ([row (in-list (translations-get-batch (current-db) itemIds lang))])
              (match-define (list id title text) row)
              (list id (nullable title) (nullable text))))]
 
   [(POST "api/translations/put")
-   (translations-put-r [rows list?])
+   (translations-put-r [rows (glist (glist GValue))])
    (translations-put! (current-db) (jsexpr->trans-rows rows))
    (hasheq 'ok #t)]
 
   [(POST "api/items/get")
-   (items-get [id exact-integer?])
+   (items-get [id GInt64])
    (hasheq 'json (nullable (item-get (current-db) id)))]
 
   [(POST "api/items/put")
-   (items-put-r [items list?])
+   (items-put-r [items (glist (glist GValue))])
    (items-put! (current-db) (jsexpr->items items))
    (hasheq 'ok #t)]
 
   [(POST "api/data/read")
-   (data-read [name string?])
+   (data-read [name GString])
    (define raw (read-data-file name))
    (define masked-json
      (if (and (string=? name "settings") raw)
@@ -175,7 +175,7 @@
    (hasheq 'json (nullable masked-json))]
 
   [(POST "api/data/write")
-   (data-write [name string?] [json string?])
+   (data-write [name GString] [json GString])
    ;; A masked key on the write path echoes the masked read — swap the
    ;; stored key back so the page can never clear it by saving untouched.
    (write-data-file
@@ -381,12 +381,21 @@
   (seed-rollout-bucket!)
   (surface-install-failure!)
 
+  ;; Transport: native (the page loads from glaze:// and every call rides
+  ;; the GLZ1 message handler — no TCP port) is the production shape on
+  ;; macOS; other platforms and explicit dev runs opt into HTTP with
+  ;; HACKDIGEST_TRANSPORT=http. GLAZE_API_TOKEN pins a fixed token for
+  ;; dev/test automation on the HTTP transport; the native transport has
+  ;; no token because the message handler is the trust boundary.
+  (define transport
+    (or (let ([v (getenv "HACKDIGEST_TRANSPORT")])
+          (and (member v '("native" "http")) (string->symbol v)))
+        (if (eq? (system-type 'os) 'macosx) 'native 'http)))
   (run-app
    #:public-dir frontend-dist
    #:api api
    #:events bus
-   ;; GLAZE_API_TOKEN pins a fixed token for dev/test automation; default
-   ;; generates a random one exchanged for an HttpOnly cookie at boot.
+   #:transport transport
    #:api-token (or (getenv "GLAZE_API_TOKEN") #t)
    #:title "HackDigest"
    #:width 1160
