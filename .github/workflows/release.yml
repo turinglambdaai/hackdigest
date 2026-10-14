@@ -82,7 +82,7 @@ jobs:
           distribution: full
 
       - name: Install glaze
-        run: raco pkg install --auto --no-docs --skip-installed git+https://github.com/turinglambdaai/glaze.git#v0.13.1
+        run: raco pkg install --auto --no-docs --skip-installed git+https://github.com/turinglambdaai/glaze.git#v0.14.0
 
       # the updater verifies manifests through the crypto package (libcrypto
       # FFI bundled with the Racket distribution)
@@ -240,7 +240,7 @@ jobs:
           distribution: full
 
       - name: Install glaze
-        run: raco pkg install --auto --no-docs --skip-installed git+https://github.com/turinglambdaai/glaze.git#v0.13.1
+        run: raco pkg install --auto --no-docs --skip-installed git+https://github.com/turinglambdaai/glaze.git#v0.14.0
 
       # the updater verifies manifests through the crypto package (libcrypto
       # FFI bundled with the Racket distribution)
@@ -661,7 +661,7 @@ jobs:
           distribution: full
 
       - name: Install glaze
-        run: raco pkg install --auto --no-docs --skip-installed git+https://github.com/turinglambdaai/glaze.git#v0.13.1
+        run: raco pkg install --auto --no-docs --skip-installed git+https://github.com/turinglambdaai/glaze.git#v0.14.0
 
       # the updater verifies manifests through the crypto package (libcrypto
       # FFI bundled with the Racket distribution)
@@ -831,7 +831,7 @@ jobs:
 
       - name: Install glaze and crypto
         run: |
-          raco pkg install --auto --no-docs --skip-installed git+https://github.com/turinglambdaai/glaze.git#v0.13.1 crypto
+          raco pkg install --auto --no-docs --skip-installed git+https://github.com/turinglambdaai/glaze.git#v0.14.0 crypto
 
       - uses: actions/download-artifact@v4
         with:
