@@ -39,7 +39,7 @@ jobs:
           version: stable
 
       - name: Install glaze
-        run: raco pkg install --auto --no-docs --skip-installed git+https://github.com/turinglambdaai/glaze.git#glz1-streaming
+        run: raco pkg install --auto --no-docs --skip-installed git+https://github.com/turinglambdaai/glaze.git#main
 
       # the updater verifies manifests through the crypto package (libcrypto
       # FFI bundled with the Racket distribution)
