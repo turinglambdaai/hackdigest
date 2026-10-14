@@ -12,6 +12,15 @@
     <meta property="og:url" content="https://hackdigest.jrtx.site/">
     <meta property="og:image" content="https://hackdigest.jrtx.site/assets/icon.png">
     <meta name="twitter:card" content="summary">
+    <script>
+        // Anti-flash: apply the saved theme before the stylesheet paints.
+        (function () {
+            var t;
+            try { t = localStorage.getItem('hackdigest-theme'); } catch (e) {}
+            if (!t) t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            document.documentElement.dataset.theme = t;
+        })();
+    </script>
     <link rel="icon" type="image/png" href="assets/icon.png">
     <link rel="stylesheet" href="styles.css">
     <link rel="preload" href="assets/fonts/newsreader-latin-var.woff2" as="font" type="font/woff2" crossorigin>
@@ -29,6 +38,7 @@
                 <a href="#digests" data-i18n="nav_digests">三层 Digest</a>
                 <a href="#pricing" data-i18n="nav_pricing">免费与 Pro</a>
                 <a href="#download" data-i18n="nav_download">下载</a>
+                <a href="guide.html" data-i18n="nav_guide">使用手册</a>
                 <div class="lang-dropdown-wrapper">
                     <button class="lang-btn" type="button" onclick="void 0" aria-label="Switch language">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
@@ -39,6 +49,7 @@
                         <li onclick="setLanguage('zh')">简体中文</li>
                     </ul>
                 </div>
+                <button class="theme-btn" id="theme-btn" type="button" aria-label="Toggle theme">◐</button>
             </div>
         </div>
     </nav>
@@ -53,7 +64,7 @@
                 <a class="btn btn-ghost" href="https://github.com/turinglambdaai/hackdigest" target="_blank"
                     rel="noopener">GitHub ↗</a>
             </div>
-            <p class="hero-note" data-i18n="hero_note">Windows · macOS · Linux 全平台免费，AGPL 开源；启动时检测新版本，直达发布页下载。</p>
+            <p class="hero-note" data-i18n="hero_note">Windows · macOS · Linux 全平台免费，AGPL 开源；v0.3.0 起内置应用内更新：便携安装原地换装，安装器渠道直达发布页。</p>
         </div>
         <div class="hero-mock" aria-hidden="true">
             <div class="mock-window">
@@ -148,7 +159,7 @@
     <section class="section" id="download">
         <div class="section-header">
             <h2 data-i18n="dl_title">下载</h2>
-            <p data-i18n="dl_desc">所有安装包由 GitHub CI 从源码构建，并通过三平台启动冒烟验证；应用启动时检测新版本，带你直达发布页下载。</p>
+            <p data-i18n="dl_desc">所有安装包由 GitHub CI 从源码构建，并通过三平台启动冒烟验证。v0.3.0 起内置应用内更新：启动时拉取 Ed25519 签名清单，macOS / Windows 便携安装原地换装，Linux 下载归档后引导安装；安装器渠道（DMG / MSI / deb / rpm）直达发布页。</p>
         </div>
         <div class="dl-grid">
             <a class="dl-card" href="https://github.com/turinglambdaai/hackdigest/releases/latest">
@@ -176,9 +187,9 @@
     <script>
         const I18N = {
             en: {
-                nav_digests: 'Three digests', nav_pricing: 'Free & Pro', nav_download: 'Download',
+                nav_digests: 'Three digests', nav_pricing: 'Free & Pro', nav_download: 'Download', nav_guide: 'User guide',
                 hero_sub: 'The best tech front page on the internet — every story, article, and comment thread, translated and digested into your language on demand.',
-                hero_download: 'Download desktop — free', hero_note: 'Windows · macOS · Linux, free on every platform. AGPL open source; update checks take you straight to the latest release.',
+                hero_download: 'Download desktop — free', hero_note: 'Windows · macOS · Linux, free on every platform. AGPL open source; in-app updates since v0.3.0 — portable installs swap in place, installer channels go straight to the release page.',
                 digests_title: 'Three digests tear the English wall down',
                 digests_desc: 'Translation is just the foundation. HackDigest turns the hardest parts of HN into two-minute reads.',
                 d1_title: 'Article TL;DR', d1_desc: 'HN links to 5,000-word essays. Compress each into a few paragraphs in your language — know if it is worth reading before you read it.',
@@ -193,7 +204,7 @@
                 p1: 'Hosted translation — no setup, no key', p2: 'Daily digest, delivered',
                 p3: 'Cross-device sync (desktop + mobile, one license)', p4: 'Fair-use unlimited · shared caches',
                 cta_download: 'Download now', cta_wait: 'Coming soon',
-                dl_title: 'Download', dl_desc: 'Every installer is built from source by GitHub CI and launch-smoke-tested on all three platforms; the app detects new versions and opens the release page for you.',
+                dl_title: 'Download', dl_desc: 'Every installer is built from source by GitHub CI and launch-smoke-tested on all three platforms. In-app updates ship as of v0.3.0: the app fetches an Ed25519-signed manifest on startup, portable installs on macOS and Windows swap in place, Linux downloads the archive and reveals it — installer channels (DMG / MSI / deb / rpm) point at the release page.',
                 dl_win: 'Windows 10/11 · MSI', dl_mac: 'Apple Silicon / Intel · DMG / ZIP', dl_linux: 'x64 / arm64 · tar.gz · deb · rpm · AppImage · zip',
                 feed_top: 'Top', feed_new: 'New', feed_ask: 'Ask HN', feed_daily: 'Daily digest',
             }
@@ -216,6 +227,11 @@
             const savedLang = localStorage.getItem('hackdigest-lang');
             if (savedLang === 'en' || savedLang === 'zh') window.setLanguage(savedLang);
         } catch (e) {}
+        document.getElementById('theme-btn').addEventListener('click', function () {
+            var next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+            document.documentElement.dataset.theme = next;
+            try { localStorage.setItem('hackdigest-theme', next); } catch (e) {}
+        });
     </script>
 </body>
 

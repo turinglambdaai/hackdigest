@@ -21,9 +21,12 @@ three platforms:
 
 | Platform | Artifacts |
 |---|---|
-| macOS (Apple Silicon / Intel) | `hackdigest-<version>-macos-<arch>.dmg` + portable `.zip` |
-| Linux (x64 / arm64) | `hackdigest-<version>-linux-<arch>.tar.gz` + `.deb` (x64 / arm64) + `.AppImage` (x64) |
+| macOS (Apple Silicon / Intel) | `hackdigest-<version>-macos-<arch>.dmg` + portable `.zip` (both architectures) |
+| Linux (x64 / arm64) | `hackdigest-<version>-linux-<arch>`: `.tar.gz` + `.deb` + `.rpm` + `.AppImage` + portable `.zip` — every format on both architectures |
 | Windows 10/11 (x64) | `hackdigest-<version>-windows-x64.msi` + portable `.zip` |
+
+Every binary asset ships a per-asset `.sha256` sidecar, aggregated in a
+`SHA256SUMS` file.
 
 > macOS builds are ad-hoc signed and not notarized: on first launch,
 > right-click → Open. The Windows MSI is unsigned, so SmartScreen may show
@@ -32,10 +35,13 @@ three platforms:
 Translation and digests need an LLM API key — set one in Settings (GLM,
 DeepSeek, Qwen, Kimi, OpenAI, or a local Ollama; all OpenAI-compatible).
 
-The app checks GitHub Releases on startup and, when a new version is out,
-takes you to the release page to download it. In-place updates are not in
-yet — they wait on the upstream Glaze updater
-([glaze#47](https://github.com/turinglambdaai/glaze/issues/47)).
+Updates are built in as of v0.3.0: on startup the app fetches an
+Ed25519-signed update manifest from GitHub Releases, and portable installs
+on macOS and Windows swap themselves in place (with an automatic relaunch).
+On Linux the app downloads the archive and reveals it in the file manager
+for a hand extraction — the family rule for archive installs. Installer
+channels (DMG / MSI / deb / rpm) point you at the Releases page instead:
+the app cannot rewrite those without elevation.
 
 ## Keyboard-first
 
@@ -116,9 +122,11 @@ live in the Racket backend.
 - Network — HN data comes straight from the official
   [Hacker News API](https://github.com/HackerNews/API) and Algolia search —
   no scraping.
-- Updates — the backend checks GitHub Releases on startup; the banner opens
-  the release page in your browser. In-place updates wait on the upstream
-  Glaze updater (glaze#47).
+- Updates — the backend fetches the Ed25519-signed update manifest on
+  startup, verifies the artifact against the signed feed, and swaps
+  portable installs in place on macOS and Windows; Linux installs get the
+  downloaded archive revealed, and installer-based installs (DMG / MSI)
+  are pointed at the release page.
 
 ## Repo layout
 

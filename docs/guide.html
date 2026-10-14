@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HackDigest — 使用手册</title>
+    <meta name="description" content="HackDigest 用户手册：五分钟上手、翻译引擎与 API Key 配置、三层 Digest、阅读偏好、键盘快捷键与常见问题。">
+    <meta property="og:title" content="HackDigest — 使用手册">
+    <meta property="og:description" content="五分钟上手 HackDigest：安装、配 Key、读第一篇带翻译的 HN 帖。">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://hackdigest.jrtx.site/guide.html">
+    <meta property="og:image" content="https://hackdigest.jrtx.site/assets/icon.png">
+    <meta name="twitter:card" content="summary">
+    <script>
+        // Anti-flash: apply the saved theme before the stylesheet paints.
+        (function () {
+            var t;
+            try { t = localStorage.getItem('hackdigest-theme'); } catch (e) {}
+            if (!t) t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            document.documentElement.dataset.theme = t;
+        })();
+    </script>
+    <link rel="icon" type="image/png" href="assets/icon.png">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preload" href="assets/fonts/newsreader-latin-var.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="assets/fonts/newsreader-latin-var-italic.woff2" as="font" type="font/woff2" crossorigin>
+</head>
+
+<body>
+    <nav class="nav">
+        <div class="nav-inner">
+            <a class="brand" href="index.html">
+                <span class="brand-mark">H</span>
+                <span class="brand-name">HackDigest</span>
+            </a>
+            <div class="nav-links">
+                <a href="index.html#digests" data-i18n="nav_digests">三层 Digest</a>
+                <a href="index.html#download" data-i18n="nav_download">下载</a>
+                <a href="guide.html" data-i18n="nav_guide" style="color: var(--accent);">使用手册</a>
+                <div class="lang-dropdown-wrapper">
+                    <button class="lang-btn" type="button" onclick="void 0" aria-label="Switch language">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+                        <span id="current-lang-label">简体中文</span>
+                    </button>
+                    <ul class="lang-menu">
+                        <li onclick="setLanguage('en')">English</li>
+                        <li onclick="setLanguage('zh')">简体中文</li>
+                    </ul>
+                </div>
+                <button class="theme-btn" id="theme-btn" type="button" aria-label="Toggle theme">◐</button>
+            </div>
+        </div>
+    </nav>
+
+    <header class="guide-hero">
+        <span class="eyebrow" data-i18n="g_eyebrow">使用手册</span>
+        <h1 data-i18n="g_title">五分钟，读懂 Hacker News。</h1>
+        <p class="lead" data-i18n="g_lead">安装、配 Key、读第一篇带翻译的 HN 帖 —— 本页一次说清。其余内容按需查。</p>
+    </header>
+
+    <div class="guide-layout">
+        <aside class="guide-toc">
+            <div class="guide-toc-group" data-i18n="toc_start">上手</div>
+            <a href="#quickstart" data-i18n="toc_quickstart">五分钟上手</a>
+            <div class="guide-toc-group" data-i18n="toc_core">核心功能</div>
+            <a href="#engine" data-i18n="toc_engine">选翻译引擎</a>
+            <a href="#byok" data-i18n="toc_byok">填 API Key</a>
+            <a href="#digests" data-i18n="toc_digests">三层 Digest</a>
+            <a href="#reading" data-i18n="toc_reading">阅读偏好</a>
+            <a href="#keys" data-i18n="toc_keys">键盘快捷键</a>
+            <div class="guide-toc-group" data-i18n="toc_faq">常见问题</div>
+            <a href="#faq-data" data-i18n="toc_data">数据存哪</a>
+            <a href="#faq-privacy" data-i18n="toc_privacy">隐私</a>
+            <a href="#faq-account" data-i18n="toc_account">账号</a>
+            <a href="#faq-platforms" data-i18n="toc_platforms">平台支持</a>
+            <a href="#faq-update" data-i18n="toc_update">更新</a>
+            <a href="#faq-uninstall" data-i18n="toc_uninstall">卸载</a>
+        </aside>
+
+        <main>
+            <!-- =================== Quick start =================== -->
+            <section class="guide-section" id="quickstart">
+                <h2 data-i18n="qs_title">🚀 五分钟上手</h2>
+                <p data-i18n="qs_intro">下载、打开、配 Key、读第一篇。四步。</p>
+                <ol>
+                    <li data-i18n="qs_1"><strong>安装。</strong>到 <a href="https://github.com/turinglambdaai/hackdigest/releases/latest" target="_blank" rel="noopener">Releases</a> 页下载最新版。macOS：打开 .dmg，把 HackDigest 拖进「应用程序」；便携党直接用 .zip。Windows：双击 .msi 安装，或把便携 .zip 解压到任意目录。Linux：安装 .deb / .rpm，跑 .AppImage，或解压 .tar.gz。</li>
+                    <li data-i18n="qs_2"><strong>首次启动。</strong>macOS 构建为 ad-hoc 签名：右键 → 打开（仅第一次）。Windows SmartScreen 可能告警：点「更多信息」→「仍要运行」。Linux 需要 <code>libwebkit2gtk-4.1</code>（发行版源里有）。</li>
+                    <li data-i18n="qs_3"><strong>选语言。</strong>打开 设置 → 外观 → 界面语言，选「中文」或 English。界面语言与翻译目标语言相互独立（翻译目标见下方「阅读偏好」）。</li>
+                    <li data-i18n="qs_4"><strong>配 API Key。</strong>不配 Key，翻译不工作。到 设置 → AI，选一个引擎，粘贴 Key，保存。手把手见下方<a href="#byok">「填 API Key」</a>。</li>
+                    <li data-i18n="qs_5"><strong>读第一篇。</strong>首页即 HN 信息流，标题已自动翻译。按 <code>j</code>/<code>k</code> 移动选中，<code>Enter</code> 打开帖子；详情页按 <code>t</code> 翻译本帖，<code>Shift+T</code> 翻译全部评论，<code>d</code> 生成 AI 摘要。按 <code>?</code> 随时呼出速查表。</li>
+                </ol>
+            </section>
+
+            <!-- =================== Engine =================== -->
+            <section class="guide-section" id="engine">
+                <h2 data-i18n="eng_title">⚙️ 选翻译引擎</h2>
+                <p data-i18n="eng_intro">翻译、摘要都走一个 OpenAI 兼容端点。在 设置 → AI → 提供商 里选。</p>
+                <ul>
+                    <li data-i18n="eng_1"><strong>HackDigest Pro（托管）</strong>—— 免配置免 Key，开箱即用；每设备 7 天免费试用，之后需要 License Key。适合「只想能用」。</li>
+                    <li data-i18n="eng_2"><strong>国产直连</strong>—— 智谱 GLM（含 GLM Coding Plan 专属端点）、DeepSeek、通义千问、Kimi。国内网络可达，注册即有额度。适合大多数国内用户。</li>
+                    <li data-i18n="eng_3"><strong>OpenAI / Ollama（本地）/ 自定义</strong>—— 有国际卡用 OpenAI；要完全离线用 Ollama（<code>http://localhost:11434</code>）；其他任意 OpenAI 兼容服务选「自定义」并填 Base URL。</li>
+                </ul>
+                <p data-i18n="eng_note">切换引擎随时生效，已缓存翻译不受影响。同一帖子的翻译绝不重复计费 —— 换引擎只影响之后的翻译。</p>
+            </section>
+
+            <!-- =================== BYOK =================== -->
+            <section class="guide-section" id="byok">
+                <h2 data-i18n="byok_title">🔑 填 API Key</h2>
+                <ol>
+                    <li data-i18n="byok_1"><strong>拿 Key。</strong>去所选平台的控制台创建 API Key：智谱 <code>open.bigmodel.cn</code>、DeepSeek <code>platform.deepseek.com</code>、阿里云百炼（通义）、Moonshot 平台（Kimi）。Ollama 本地运行，无需 Key。</li>
+                    <li data-i18n="byok_2"><strong>填 Key。</strong>设置 → AI → 提供商选对应厂商 → 粘贴 Key → 选模型（不确定就选列表第一项）→ 保存。</li>
+                    <li data-i18n="byok_3"><strong>验证。</strong>回到任意帖子按 <code>t</code>，几秒内出翻译即成功。</li>
+                </ol>
+                <div class="guide-note" data-i18n="byok_note">Key 只存在本机后端，页面（webview）拿不到 —— 设置页里已保存的 Key 只显示掩码。请求直达你所选的服务商，不经过任何中间方。</div>
+                <h3 data-i18n="byok_trouble">常见卡点</h3>
+                <ul>
+                    <li data-i18n="byok_t1">报 401 —— Key 填错或已过期，重新生成一个。</li>
+                    <li data-i18n="byok_t2">报 429 / 余额不足 —— 去平台充值或换模型；后端已内置限流重试。</li>
+                    <li data-i18n="byok_t3">Ollama 连不上 —— 确认本地服务在跑：<code>ollama serve</code>，并已 <code>ollama pull</code> 过模型。</li>
+                </ul>
+            </section>
+
+            <!-- =================== Digests =================== -->
+            <section class="guide-section" id="digests">
+                <h2 data-i18n="dig_title">☕ 三层 Digest</h2>
+                <ul>
+                    <li data-i18n="dig_1"><strong>文章 TL;DR</strong>—— 详情页按 <code>d</code>：五千词英文压成几段中文，先知道值不值得读。</li>
+                    <li data-i18n="dig_2"><strong>评论区观点提炼</strong>—— 同一个 <code>d</code>：八百条回复提炼成正反论点与社区倾向。配合 <code>Shift+T</code> 先通读翻译，再读提炼。</li>
+                    <li data-i18n="dig_3"><strong>每日晨报</strong>—— 侧栏「今日晨报」（或按 <code>6</code>）：今早首页两分钟读完，按主题分组。</li>
+                </ul>
+                <p data-i18n="dig_note">摘要按次调用所选引擎，长文消耗相应 token；托管版走全局共享缓存，命中即免费。</p>
+            </section>
+
+            <!-- =================== Reading =================== -->
+            <section class="guide-section" id="reading">
+                <h2 data-i18n="read_title">📖 阅读偏好</h2>
+                <p data-i18n="read_intro">都在 设置 → 外观：</p>
+                <ul>
+                    <li data-i18n="read_1"><strong>深浅色。</strong>跟随系统 / 浅色 / 深色三选一。</li>
+                    <li data-i18n="read_2"><strong>字号。</strong>90% – 125% 四档。</li>
+                    <li data-i18n="read_3"><strong>翻译目标语言。</strong>简体中文 / 繁体中文 / 日本語 / 한국어 / English。</li>
+                    <li data-i18n="read_4"><strong>自动翻译。</strong>「标题自动翻译」默认开；「滚动自动翻译评论」默认关，手动按 <code>Shift+T</code> 更省 token。</li>
+                    <li data-i18n="read_5"><strong>收藏。</strong>任意位置按 <code>s</code> 收藏，侧栏随时回看。</li>
+                </ul>
+            </section>
+
+            <!-- =================== Shortcuts =================== -->
+            <section class="guide-section" id="keys">
+                <h2 data-i18n="keys_title">⌨️ 键盘快捷键</h2>
+                <p data-i18n="keys_intro">应用内按 <code>?</code> 呼出速查表；默认值：</p>
+                <ul>
+                    <li data-i18n="keys_1">列表：<code>j</code>/<code>k</code> 移动 · <code>Enter</code>/<code>o</code> 打开 · <code>s</code> 收藏 · <code>t</code> 翻译标题 · <code>r</code> 刷新 · <code>1–6</code> 切换信息流 · <code>/</code> 搜索</li>
+                    <li data-i18n="keys_2">详情：<code>←</code>/<code>u</code> 返回 · <code>t</code> 翻译本帖 · <code>Shift+T</code> 翻译全部评论 · <code>d</code> AI 摘要</li>
+                </ul>
+            </section>
+
+            <!-- =================== FAQ =================== -->
+            <section class="guide-section" id="faq-data">
+                <h2 data-i18n="data_title">💾 数据存哪？</h2>
+                <p data-i18n="data_1">全部本地数据（设置、收藏、翻译缓存）放在一个目录：</p>
+                <ul>
+                    <li>macOS：<code>~/Library/Application Support/hackdigest</code></li>
+                    <li>Windows：<code>%APPDATA%\hackdigest</code></li>
+                    <li>Linux：<code>~/.config/hackdigest</code></li>
+                </ul>
+                <p data-i18n="data_2">翻译缓存也在这里 —— 同一帖子只翻译一次，换设备不迁移缓存（重新翻译即可，成本极低）。</p>
+            </section>
+
+            <section class="guide-section" id="faq-privacy">
+                <h2 data-i18n="priv_title">🔒 隐私</h2>
+                <ul>
+                    <li data-i18n="priv_1">无账号、无遥测。BYOK 模式下，翻译请求从本机直达你选的服务商。</li>
+                    <li data-i18n="priv_2">API Key 只存本机后端，webview 拿不到，也不上传。</li>
+                    <li data-i18n="priv_3">HN 数据来自官方 API 与 Algolia 搜索，不爬虫、不落地到我们的服务器。</li>
+                    <li data-i18n="priv_4">只有 Pro 托管模式经我们的服务器转发，并使用全局共享翻译缓存（帖子级缓存，不含个人信息）。</li>
+                </ul>
+            </section>
+
+            <section class="guide-section" id="faq-account">
+                <h2 data-i18n="acct_title">👤 要注册账号吗？</h2>
+                <p data-i18n="acct_1">不用。BYOK 全功能免费，永远不需要账号。只有用 Pro 托管服务（免 Key 开箱即用）才涉及授权：每设备 7 天免费试用，之后购买终身 / 年度 License Key 填入即可，依旧没有账号体系。</p>
+            </section>
+
+            <section class="guide-section" id="faq-platforms">
+                <h2 data-i18n="plat_title">🖥️ 平台支持</h2>
+                <ul>
+                    <li data-i18n="plat_1"><strong>macOS</strong> —— Apple Silicon 与 Intel 双架构，.dmg 安装版 + .zip 便携版。</li>
+                    <li data-i18n="plat_2"><strong>Windows</strong> —— Windows 10/11 x64，.msi 安装版 + .zip 便携版。</li>
+                    <li data-i18n="plat_3"><strong>Linux</strong> —— x64 与 arm64 双架构，.tar.gz / .deb / .rpm / .AppImage / .zip 五种格式；需系统 WebKitGTK 4.1。</li>
+                    <li data-i18n="plat_4"><strong>移动端</strong>—— iOS / iPadOS / Android 在路线图（Phase 3），尚未开始。</li>
+                </ul>
+            </section>
+
+            <section class="guide-section" id="faq-update">
+                <h2 data-i18n="upd_title">🔄 更新</h2>
+                <p data-i18n="upd_1">v0.3.0 起内置应用内更新：启动时拉取 Ed25519 签名清单，确认有新版后按安装方式处理 ——</p>
+                <ul>
+                    <li data-i18n="upd_2"><strong>便携安装（macOS .zip / Windows .zip）</strong>—— 应用内一键原地换装，自动重启。</li>
+                    <li data-i18n="upd_3"><strong>Linux</strong>—— 应用下载归档并打开所在文件夹，把解压内容覆盖到应用目录（归档安装的家族规则）。</li>
+                    <li data-i18n="upd_4"><strong>安装器安装（.dmg / .msi / .deb / .rpm）</strong>—— 应用带你到 Releases 页，下载新安装包覆盖安装（此类安装无提权无法自我改写）。</li>
+                </ul>
+                <p data-i18n="upd_5">手动检查：设置 → 关于 → 检查更新。数据目录跨版本通用，更新不丢收藏与设置。</p>
+                <h3 data-i18n="upd_legacy">0.2.x 存量用户</h3>
+                <p data-i18n="upd_legacy_1">应用内更新机制自 0.1.0 就已内置 —— 直接打开 设置 → 关于 → 检查更新，即可升到最新版。若你停在更早版本或检查失败，到 <a href="https://github.com/turinglambdaai/hackdigest/releases/latest" target="_blank" rel="noopener">Releases</a> 页下载安装包覆盖安装即可，数据目录不变。</p>
+            </section>
+
+            <section class="guide-section" id="faq-uninstall">
+                <h2 data-i18n="unin_title">🗑️ 卸载</h2>
+                <ol>
+                    <li data-i18n="unin_1"><strong>删应用。</strong>macOS 把 HackDigest 移进废纸篓；Windows 在「设置 → 应用」卸载（MSI）或直接删便携目录；Linux <code>sudo apt remove hackdigest</code>（或对应包管理器）/ 删解压目录。</li>
+                    <li data-i18n="unin_2"><strong>删数据（可选）。</strong>想清掉收藏与缓存，再删除上方「数据存哪」里的目录。API Key 随之删除。</li>
+                </ol>
+            </section>
+        </main>
+    </div>
+
+    <footer class="footer">
+        <p>AGPL-3.0 · <span data-i18n="foot_data">数据来自</span> <a href="https://github.com/HackerNews/API" target="_blank"
+                rel="noopener">Hacker News 官方 API</a></p>
+        <p><a href="https://github.com/turinglambdaai/hackdigest" target="_blank" rel="noopener">GitHub</a> · <a
+                href="index.html">HackDigest</a> · <a href="https://jrtx.site" target="_blank" rel="noopener">jrtx.site</a></p>
+    </footer>
+
+    <script>
+        const I18N = {
+            en: {
+                nav_digests: 'Three digests', nav_download: 'Download', nav_guide: 'User guide',
+                g_eyebrow: 'User guide',
+                g_title: 'Read Hacker News in five minutes.',
+                g_lead: 'Install, plug in a key, read your first translated HN thread — this page covers it once. Everything else is reference.',
+                toc_start: 'Get started', toc_quickstart: 'Five-minute start',
+                toc_core: 'Core', toc_engine: 'Translation engine', toc_byok: 'API key', toc_digests: 'Three digests', toc_reading: 'Reading preferences', toc_keys: 'Keyboard shortcuts',
+                toc_faq: 'FAQ', toc_data: 'Where data lives', toc_privacy: 'Privacy', toc_account: 'Account', toc_platforms: 'Platforms', toc_update: 'Updates', toc_uninstall: 'Uninstall',
+                qs_title: '🚀 Five-minute start',
+                qs_intro: 'Download, open, plug in a key, read. Four steps.',
+                qs_1: "<strong>Install.</strong> Grab the latest build from the <a href='https://github.com/turinglambdaai/hackdigest/releases/latest' target='_blank' rel='noopener'>Releases</a> page. macOS: open the .dmg and drag HackDigest into Applications; portable users take the .zip. Windows: run the .msi, or unzip the portable .zip anywhere. Linux: install the .deb / .rpm, run the .AppImage, or unpack the .tar.gz.",
+                qs_2: "<strong>First launch.</strong> macOS builds are ad-hoc signed: right-click → Open (first time only). Windows SmartScreen may warn — More info → Run anyway. Linux needs <code>libwebkit2gtk-4.1</code> (in your distro's repos).",
+                qs_3: "<strong>Pick a language.</strong> Open Settings → Appearance → UI language, choose 中文 or English. The UI language is independent of the translation target language (see Reading preferences).",
+                qs_4: "<strong>Add an API key.</strong> Without a key, translation stays off. Go to Settings → AI, pick an engine, paste the key, save. Step by step in <a href='#byok'>API key</a> below.",
+                qs_5: "<strong>Read your first thread.</strong> The home screen is the HN front page with titles already translated. Press <code>j</code>/<code>k</code> to move, <code>Enter</code> to open; in a thread press <code>t</code> to translate it, <code>Shift+T</code> for all comments, <code>d</code> for the AI digest. Press <code>?</code> anytime for the cheat sheet.",
+                eng_title: '⚙️ Choose a translation engine',
+                eng_intro: 'Translation and digests go through one OpenAI-compatible endpoint. Pick it in Settings → AI → Provider.',
+                eng_1: "<strong>HackDigest Pro (hosted)</strong> — no setup, no key; a 7-day free trial per device, then a license key. For \"just make it work\".",
+                eng_2: "<strong>China-reachable</strong> — Zhipu GLM (including the GLM Coding Plan endpoint), DeepSeek, Qwen, Kimi. Reachable from mainland networks, sign-up grants free quota. Best for most mainland users.",
+                eng_3: "<strong>OpenAI / Ollama (local) / Custom</strong> — OpenAI if you have an international card; Ollama for fully local (<code>http://localhost:11434</code>); any other OpenAI-compatible service under Custom with its base URL.",
+                eng_note: 'Switching engines takes effect immediately; cached translations carry over. A thread is never translated twice — switching only affects future work.',
+                byok_title: '🔑 Plug in an API key',
+                byok_1: "<strong>Get a key.</strong> Create one in the provider's console: Zhipu <code>open.bigmodel.cn</code>, DeepSeek <code>platform.deepseek.com</code>, Alibaba Bailian (Qwen), Moonshot (Kimi). Ollama runs locally — no key needed.",
+                byok_2: "<strong>Enter the key.</strong> Settings → AI → pick the provider → paste the key → pick a model (when unsure, the first one) → save.",
+                byok_3: "<strong>Verify.</strong> Open any thread and press <code>t</code> — a translation within seconds means it works.",
+                byok_note: 'The key is stored only in the local backend — the webview never sees it (saved keys render as a mask). Requests go straight to the provider you chose, through no middleman.',
+                byok_trouble: 'Common blockers',
+                byok_t1: 'Error 401 — the key is wrong or expired; generate a fresh one.',
+                byok_t2: 'Error 429 / out of quota — top up at the provider or switch models; the backend already retries rate limits.',
+                byok_t3: 'Ollama unreachable — make sure it is running (<code>ollama serve</code>) and you have pulled a model.',
+                dig_title: '☕ The three digests',
+                dig_1: "<strong>Article TL;DR</strong> — press <code>d</code> in a thread: 5,000 words of English become a few paragraphs in your language.",
+                dig_2: "<strong>Thread digest</strong> — same <code>d</code>: 800 replies become the top arguments on each side and where the community landed. Pair with <code>Shift+T</code> to read the translations first.",
+                dig_3: "<strong>Daily digest</strong> — the \"Daily digest\" feed (or press <code>6</code>): this morning's front page as a two-minute read, grouped by theme.",
+                dig_note: 'Each digest is one call to your chosen engine; long articles cost proportional tokens. The hosted plan shares caches globally — a cache hit costs nothing.',
+                read_title: '📖 Reading preferences',
+                read_intro: 'All in Settings → Appearance:',
+                read_1: "<strong>Theme.</strong> Follow system / light / dark.",
+                read_2: "<strong>Font size.</strong> Four steps from 90% to 125%.",
+                read_3: "<strong>Translation target.</strong> 简体中文 / 繁體中文 / 日本語 / 한국어 / English.",
+                read_4: "<strong>Auto-translate.</strong> \"Auto-translate titles\" is on by default; \"auto-translate comments on scroll\" is off — manual <code>Shift+T</code> saves tokens.",
+                read_5: "<strong>Bookmarks.</strong> Press <code>s</code> anywhere to bookmark; revisit them from the sidebar.",
+                keys_title: '⌨️ Keyboard shortcuts',
+                keys_intro: "Press <code>?</code> in the app for the live cheat sheet. Defaults:",
+                keys_1: "Lists: <code>j</code>/<code>k</code> move · <code>Enter</code>/<code>o</code> open · <code>s</code> bookmark · <code>t</code> translate title · <code>r</code> refresh · <code>1–6</code> switch feeds · <code>/</code> search",
+                keys_2: "Thread: <code>←</code>/<code>u</code> back · <code>t</code> translate thread · <code>Shift+T</code> translate all comments · <code>d</code> AI digest",
+                data_title: '💾 Where does my data live?',
+                data_1: 'All local data (settings, bookmarks, translation cache) lives in one directory:',
+                data_2: 'The translation cache lives there too — a thread is translated once. Caches do not migrate across devices (re-translating is cheap).',
+                priv_title: '🔒 Privacy',
+                priv_1: 'No account, no telemetry. In BYOK mode, translation requests go from your machine straight to the provider you picked.',
+                priv_2: 'The API key is stored only in the local backend — the webview cannot touch it, and it is never uploaded.',
+                priv_3: 'HN data comes from the official API and Algolia search — no scraping, nothing lands on our servers.',
+                priv_4: 'Only the hosted Pro plan relays through our servers and uses the globally shared translation cache (story-level cache, no personal data).',
+                acct_title: '👤 Do I need an account?',
+                acct_1: 'No. BYOK is free forever and never needs an account. Only the hosted Pro plan (no-key, zero setup) involves licensing: a 7-day free trial per device, then a lifetime / yearly license key — still no account system.',
+                plat_title: '🖥️ Platforms',
+                plat_1: "<strong>macOS</strong> — Apple Silicon and Intel, .dmg installer + portable .zip.",
+                plat_2: "<strong>Windows</strong> — Windows 10/11 x64, .msi installer + portable .zip.",
+                plat_3: "<strong>Linux</strong> — x64 and arm64, five formats: .tar.gz / .deb / .rpm / .AppImage / .zip; needs system WebKitGTK 4.1.",
+                plat_4: "<strong>Mobile</strong> — iOS / iPadOS / Android are on the roadmap (Phase 3), not started yet.",
+                upd_title: '🔄 Updates',
+                upd_1: 'In-app updates ship as of v0.3.0: on startup the app fetches an Ed25519-signed manifest, and when a new version is out the next step depends on how you installed —',
+                upd_2: "<strong>Portable installs (macOS .zip / Windows .zip)</strong> — one click, swapped in place, automatic relaunch.",
+                upd_3: "<strong>Linux</strong> — the app downloads the archive and reveals its folder; extract it over the app directory by hand (the family rule for archive installs).",
+                upd_4: "<strong>Installer installs (.dmg / .msi / .deb / .rpm)</strong> — the app takes you to the Releases page to download the new installer (those installs cannot rewrite themselves without elevation).",
+                upd_5: 'Check manually: Settings → About → Check for updates. The data directory carries across versions — bookmarks and settings survive updates.',
+                upd_legacy: 'Updating from 0.2.x',
+                upd_legacy_1: "The in-app updater has shipped since 0.1.0 — open Settings → About → Check for updates and take the latest. If you are on an older build or the check fails, download the installer from the <a href='https://github.com/turinglambdaai/hackdigest/releases/latest' target='_blank' rel='noopener'>Releases</a> page and install over the old one; the data directory stays put.",
+                unin_title: '🗑️ Uninstall',
+                unin_1: "<strong>Remove the app.</strong> macOS: drag HackDigest to the Trash. Windows: uninstall in Settings → Apps (MSI) or delete the portable folder. Linux: <code>sudo apt remove hackdigest</code> (or your package manager) / delete the unpacked directory.",
+                unin_2: "<strong>Remove data (optional).</strong> To wipe bookmarks and caches, also delete the directory from \"Where does my data live\" above. The API key goes with it.",
+                foot_data: 'data from',
+            }
+        };
+        const ZH = {}; // default markup is zh; capture on load
+        document.querySelectorAll('[data-i18n]').forEach(el => { ZH[el.dataset.i18n] = el.innerHTML; });
+        let lang = 'zh';
+        window.setLanguage = function (target) {
+            if (target !== 'zh' && target !== 'en') return;
+            lang = target;
+            try { localStorage.setItem('hackdigest-lang', lang); } catch (e) {}
+            const label = document.getElementById('current-lang-label');
+            if (label) label.textContent = lang === 'zh' ? '简体中文' : 'English';
+            document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                el.innerHTML = lang === 'zh' ? ZH[el.dataset.i18n] : (I18N.en[el.dataset.i18n] ?? ZH[el.dataset.i18n]);
+            });
+        };
+        try {
+            const savedLang = localStorage.getItem('hackdigest-lang');
+            if (savedLang === 'en' || savedLang === 'zh') window.setLanguage(savedLang);
+        } catch (e) {}
+        document.getElementById('theme-btn').addEventListener('click', function () {
+            var next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+            document.documentElement.dataset.theme = next;
+            try { localStorage.setItem('hackdigest-theme', next); } catch (e) {}
+        });
+    </script>
+</body>
+
+</html>

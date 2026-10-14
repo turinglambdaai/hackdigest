@@ -304,6 +304,17 @@
 (define candidate-box (box #f))
 (define worker-thread-box (box #f))
 
+;; Download watchdog bounds. The copy loop below waits on read-bytes-avail!
+;; with no timeout, so a connection that stalls without RST/FIN parks the
+;; worker thread forever — visibly "stuck at N%" with the phase never
+;; moving. Two finite bounds keep the phase machine honest: no byte
+;; progress for the stall limit, or wall clock past the total limit, breaks
+;; the worker (the .partial cleanup runs, and the worker reports phase =
+;; error itself) so the UI always gets a terminal state.
+(define download-stall-limit-seconds 120)
+(define download-total-limit-seconds (* 30 60))
+(define last-progress-seconds (box 0))
+
 (define (state-set! key value)
   (set-box! update-state (hash-set (unbox update-state) key value)))
 
@@ -463,7 +474,9 @@
   (make-parent-directory* destination)
   (define temporary (path-add-extension destination #".partial"))
   (when (file-exists? temporary) (delete-file temporary))
-  (with-handlers ([exn:fail?
+  ;; exn:break is not an exn:fail, but the watchdog raises exactly that to
+  ;; stop a stalled worker — either way the .partial must not survive.
+  (with-handlers ([(lambda (e) (or (exn:fail? e) (exn:break? e)))
                    (lambda (e)
                      (when (file-exists? temporary) (delete-file temporary))
                      (raise e))])
@@ -485,6 +498,8 @@
                 (define next (+ done count))
                 (when (> next maximum-download-bytes)
                   (error 'download-update "update exceeds configured download limit"))
+                ;; Feed the watchdog's stall clock on every byte progress.
+                (set-box! last-progress-seconds (current-seconds))
                 (define percent
                   (if (> total 0) (min 100 (quotient (* next 100) total)) 0))
                 (when (> percent last-percent) (state-set! 'percent percent))
@@ -508,21 +523,51 @@
   (state-set! 'percent 0)
   (state-set! 'message #f)
   (define destination (destination-path candidate))
+  (set-box! last-progress-seconds (current-seconds))
   (set-box! worker-thread-box
             ;; App custodian, not the inbound request's (see updater-custodian):
             ;; a request-scoped thread is reaped when the connection closes.
             (parameterize ([current-custodian updater-custodian])
               (thread
                (lambda ()
+                 ;; The watchdog breaks a stalled worker; exn:break is not an
+                 ;; exn:fail, so it needs its own arm — either way the .partial
+                 ;; is already gone (cleaned in download-with-progress!) and the
+                 ;; phase lands on error, never mid-flight.
                  (with-handlers
-                     ([exn:fail?
+                     ([(lambda (e) (or (exn:fail? e) (exn:break? e)))
                        (lambda (e)
                          (state-set! 'phase "error")
-                         (state-set! 'message (exn-message e)))])
+                         (state-set! 'message
+                                     (if (exn:break? e)
+                                         "update download stalled or timed out"
+                                         (exn-message e))))])
                    (define path (download-with-progress! candidate destination))
                    (state-set! 'phase "downloaded")
                    (state-set! 'percent 100)
-                   (state-set! 'downloadedPath (path->string path))))))))
+                   (state-set! 'downloadedPath (path->string path)))))))
+  ;; Watchdog: exits once the worker finishes on its own; otherwise a stall
+  ;; (no byte progress for the stall limit) or the total wall-clock limit
+  ;; breaks the worker so the phase never rests on "downloading" forever.
+  ;; Attached to the app custodian like the worker itself.
+  (define download-started (current-seconds))
+  (define worker-thread (unbox worker-thread-box))
+  (parameterize ([current-custodian updater-custodian])
+    (thread
+     (lambda ()
+       (let loop ()
+         (cond
+           [(sync/timeout download-stall-limit-seconds
+                          (thread-dead-evt worker-thread))
+            (void)]
+           [(> (- (current-seconds) (unbox last-progress-seconds))
+               download-stall-limit-seconds)
+            (break-thread worker-thread)]
+           [(> (- (current-seconds) download-started)
+               download-total-limit-seconds)
+            (break-thread worker-thread)]
+           [else (loop)])))))
+  (void))
 
 ;; ---------- install handover ----------
 ;;

@@ -14,15 +14,17 @@ Hacker News 大概是互联网上最好的技术首页 —— 但对数以百万
 
 | 平台 | 产物 |
 |---|---|
-| macOS（Apple Silicon / Intel） | `hackdigest-<version>-macos-<arch>.dmg` + 便携 `.zip` |
-| Linux（x64 / arm64） | `hackdigest-<version>-linux-<arch>.tar.gz` + `.deb`（x64 / arm64）+ `.AppImage`（x64） |
+| macOS（Apple Silicon / Intel） | `hackdigest-<version>-macos-<arch>.dmg` + 便携 `.zip`（双架构齐备） |
+| Linux（x64 / arm64） | `hackdigest-<version>-linux-<arch>`：`.tar.gz` + `.deb` + `.rpm` + `.AppImage` + 便携 `.zip` —— 每种格式双架构都有 |
 | Windows 10/11（x64） | `hackdigest-<version>-windows-x64.msi` + 便携 `.zip` |
+
+每个二进制产物都附带同名的 `.sha256` 校验文件，并汇总为 `SHA256SUMS`。
 
 > macOS 构建为 ad-hoc 签名、未公证：首次启动请右键 → 打开。Windows MSI 未签名，首次安装时 SmartScreen 可能告警 —— 选择「仍要运行」。
 
 翻译与 Digest 需要一个大模型 API Key —— 在设置里填一个（GLM、DeepSeek、通义、Kimi、OpenAI，或本地 Ollama，均为 OpenAI 兼容接口）。
 
-应用启动时会检查 GitHub Releases，发现新版本后带你前往发布页下载。应用内就地更新尚未实现 —— 等上游 Glaze 更新器（[glaze#47](https://github.com/turinglambdaai/glaze/issues/47)）落地。
+应用内更新自 v0.3.0 起内置：启动时从 GitHub Releases 拉取 Ed25519 签名清单，macOS 与 Windows 的便携安装原地换装（自动重启）；Linux 下载归档后在文件管理器中呈现，手动解压覆盖 —— 这是家族对归档安装的统一规则。安装器渠道（DMG / MSI / deb / rpm）则引导你前往 Releases 页 —— 这类安装没有提权无法自我改写。
 
 ## 键盘优先
 
@@ -63,7 +65,7 @@ HN 老用户的肌肉记忆全部保留：**j/k** 上下移动选中，**Enter/o
 - 前端 —— React + Vite + zustand + Tailwind 4，渐进加载的评论树与信息流，深浅色；应用内经 HTTP 与后端通信，纯浏览器 dev 保留 IndexedDB 兜底。
 - 后端 —— Racket：SQLite 存储（kv、翻译缓存、HN 条目缓存 —— 同一帖子的翻译绝不重复翻译）+ settings/library JSON 文件。翻译/Digest 管线（提示词构建、30 条标题批、评论自愈二分）在这里跑，BYOK 的 API Key 只存在后端、页面碰不到；LLM 调用经后端代理流式返回，带重试与 60 秒超时。
 - 网络 —— HN 数据直接来自官方 [Hacker News API](https://github.com/HackerNews/API) 与 Algolia 搜索 API —— 不爬虫。
-- 更新 —— 后端对接 GitHub Releases 做版本检查；发现新版本时在浏览器打开发布页，应用内就地更新等上游 Glaze 更新器（glaze#47）落地。
+- 更新 —— 后端启动时拉取 Ed25519 签名更新清单，按签名清单校验产物，macOS 与 Windows 的便携安装原地换装；Linux 安装呈现下载好的归档，安装器安装（DMG / MSI）则引导前往发布页。
 
 ## 仓库结构
 

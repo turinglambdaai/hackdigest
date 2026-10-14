@@ -7,6 +7,41 @@ releases and tags were withdrawn.
 
 ## [Unreleased]
 
+## 0.3.1 - 2026-10-14
+
+Alignment release: the docs catch up with what v0.3.0 already ships, the
+site joins the family dark-mode baseline, and the updater's download loop
+gains a watchdog. No app-facing behavior changes beyond the hardening.
+
+### Added
+
+- Download watchdog in the updater: a transfer that stops making byte
+  progress for 120 seconds, or that runs past a 30-minute wall-clock
+  total, is broken out of its worker (`exn:break`), the `.partial` file is
+  cleaned up, and the phase lands on error — the UI always gets a terminal
+  state instead of resting on "downloading" forever.
+- User guide: `docs/guide.html` on the product site — five-minute start,
+  engine and BYOK setup, reading preferences, shortcuts, and FAQ
+  (data location, privacy, platforms, updates incl. the 0.2.x path,
+  uninstall). Bilingual via `data-i18n`, default Chinese.
+
+### Changed
+
+- README (English and Chinese) now describes the updater as it actually
+  works since v0.3.0: startup fetch of the Ed25519-signed manifest,
+  in-place swap on macOS/Windows portable installs, download-and-reveal on
+  Linux, release page for installer channels — replacing the stale
+  "in-place updates wait on glaze#47" wording. The download table shows
+  the real v0.3.0 Linux matrix (tar.gz / deb / rpm / AppImage / zip, every
+  format on both architectures, per-asset `.sha256` sidecars).
+- CI and release workflows pin glaze to `v0.13.1` (`.git`-suffixed URL)
+  instead of a floating branch install.
+- Product site: palette aligned to the family values (`#faf7f2` /
+  `#c15f3c` / `#e8e2d9` …), full dark mode with a manual toggle,
+  localStorage persistence and a head anti-flash script, and download
+  copy that matches the real update flow. `docs/GLAZE-MIGRATION.md` is
+  marked as completed with a pointer to the CHANGELOG.
+
 ## 0.3.0 - 2026-10-11
 
 Linux packaging closes the family benchmark gap format-for-format, and every
