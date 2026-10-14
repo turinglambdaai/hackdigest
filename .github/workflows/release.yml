@@ -891,3 +891,24 @@ jobs:
         uses: actions/attest-build-provenance@v1
         with:
           subject-path: dist/*
+      - name: Stable alias copies (versionless direct-download links)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          VERSION="${GITHUB_REF_NAME#v}"
+          # Family rule: download buttons point at
+          # releases/latest/download/<alias>, so every release also ships
+          # versionless copies of the primary installers (hackdigest also
+          # aliases the Windows portable zip). Deliberately after the
+          # provenance attestation so dist/* there stays versioned-only.
+          mkdir -p stable-alias
+          cp "dist/hackdigest-${VERSION}-macos-arm64.dmg" stable-alias/hackdigest-macos-arm64.dmg
+          cp "dist/hackdigest-${VERSION}-macos-x64.dmg" stable-alias/hackdigest-macos-x64.dmg
+          cp "dist/hackdigest-${VERSION}-windows-x64.msi" stable-alias/hackdigest-windows-x64.msi
+          cp "dist/hackdigest-${VERSION}-windows-x64.zip" stable-alias/hackdigest-windows-x64.zip
+          cp "dist/hackdigest-${VERSION}-linux-x64.deb" stable-alias/hackdigest-linux-x64.deb
+          cp "dist/hackdigest-${VERSION}-linux-arm64.deb" stable-alias/hackdigest-linux-arm64.deb
+          cp "dist/hackdigest-${VERSION}-linux-x64.AppImage" stable-alias/hackdigest-linux-x64.AppImage
+          cp "dist/hackdigest-${VERSION}-linux-arm64.AppImage" stable-alias/hackdigest-linux-arm64.AppImage
+          gh release upload "${{ github.ref_name }}" stable-alias/* --clobber -R turinglambdaai/hackdigest
