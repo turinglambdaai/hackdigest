@@ -1,37 +1,35 @@
-# HackDigest 产品与收费方案
+# HackDigest product and pricing plan
 
-## 首发与执行边界
+**English** · [简体中文](PRICING.zh-CN.md)
 
-- 本方案版本 `2026-10-v2`。用户确认所有产品仍在开发、没有实际用户；本文件替代此前冲突的定价/早鸟/Pro 设想，不存在需要迁移的现有客户群。**价格是首发目标，不表示已经开卖或已完成相应功能。**
-- 只发布已交付平台的权益；新计划不改变已经发布源码的 LICENSE。开源源码的使用/修改/再分发权与官方商品、更新和服务分别说明。
-- 修复安全漏洞、读取/备份/导出自己的数据不以再次购买作为条件。模型 key、支付渠道密钥和签发私钥各有边界，不在宿主代码里直接收款或签发。
+## Launch status and implementation boundaries
 
-## 决策
+- Policy version: `2026-10-v2`, 2026-10-23. The owner confirmed that every product is still in development and has no actual users. This document replaces conflicting previous pricing, early-bird and Pro proposals; there is no existing customer cohort to migrate. **Prices are launch targets, not live offers or claims that the listed features are implemented.**
+- Entitlements cover delivered platforms only. New commercial plans do not change the LICENSE of released source. Source use, modification and redistribution rights are separate from official products, updates and services.
+- Security fixes and reading, backing up or exporting your own data must not require another purchase. BYOK keys, payment-provider secrets and issuer private keys have different owners. Native hosts do not collect payment or issue credentials directly.
 
-**免费 BYOK + 限额托管订阅**
+## Decision
 
-首发目标：**托管目标：¥19 / US$3 每月；¥190 / US$30 每年；不售终身托管**。人民币和美元是分别设定的地区目标价格，不是实时汇率换算。
+**Free BYOK with a capped hosted subscription**
 
-免配置有持续推理成本，订阅有理由；先做一档可解释的限额，不用含糊 fair-use 或终身 AI 买断承担无限负债。
+Launch target: **Hosted launch target: ¥19 / US$3 per month, or ¥190 / US$30 per year; no lifetime hosting**. CNY and USD are independently set regional targets, not a live exchange-rate conversion.
 
-## 免费与付费边界
+No-setup inference has an ongoing cost, making a subscription appropriate. Start with one understandable capped plan, not vague fair-use limits or a lifetime AI purchase with unlimited liabilities.
 
-免费 / 评估：客户端、HN 阅读、全部 BYOK 翻译/摘要与本地缓存免费。应用不向 BYOK 追加配额收费，服务商自身收费与限制仍适用。
+## Free and paid scope
 
-付费：托管首发只包含翻译与摘要，不捆绑未交付同步/手机。每个账户每天最多 20 条标题翻译和 3 次正文/评论摘要；标题每条最多 300 字符，正文 8,000、评论合计 16,000 Unicode 码点，超长明确截断并提示。失败不扣次数，成功缓存重读不扣次数；每日 UTC 00:00 重置，不结转。
+Free / evaluation: The client, HN reading, all BYOK translation/digests and local caches are free. The application adds no paid BYOK quota; your provider charges and limits still apply.
 
-## 订阅约束
+Paid: The hosted launch plan contains translation and digests only, without unreleased sync or mobile. Per account per day: at most 20 title translations and 3 article/thread digests. Each title is capped at 300 Unicode code points, article input at 8,000 and total thread input at 16,000. Overlong input is explicitly truncated with a notice. Failures do not consume quota; rereading a successful cached result does not consume it again. Quota resets at 00:00 UTC daily and does not roll over.
 
-托管按账户而非设备计量；当前月/年周期内按公开配额提供服务。取消后不续扣，已付期继续；期满不再提供托管计算，仍能读取并导出本地数据。无永久托管授权、自动超额扣款或隐藏 fair-use 限制。年付预收并不降低持续服务义务。取消/退款/保留与删除时限、模型列表和总价必须在真实结账前清楚展示并经过端到端验收。
+## Subscription boundaries
 
-## 开卖前的下一步
+Hosted usage is metered by account, not device. Service within the current monthly/annual period follows the published allowance. Cancellation stops renewal, while the paid period remains available. After expiry, hosted compute stops; local data remains readable and exportable. No lifetime hosting, automatic overage charge or hidden fair-use restriction. An annual prepayment does not reduce the obligation to provide the paid service. Cancellation/refund rules, retention/deletion periods, model lists and total price must be clear before real checkout and verified end to end.
 
-托管尚不在售。先完成 #2 的 native transport 与私钥存储；固定模型/供应商列表并实测 30 天请求成本，含未缓存 p95 与滥用场景，最坏允许配额成本须低于标价 25%（含供应商计费误差）。未达标只保留免费 BYOK，不降低已售配额。7 天托管试用仅在账户限流、预算熔断、取消与删除上线后开放；不再按设备发永久试用。
+## Next gate before sales
 
-执行入口：[本仓 #2](https://github.com/turinglambdaai/hackdigest/issues/2)。先交付这个切片，再扩展商业功能。
+Hosted service is not on sale. Complete native transport and secret storage in #2, fix the model/provider list and measure 30 days of request costs, including uncached p95 and abuse scenarios. The worst-case allowed quota must cost less than 25% of the target price, including provider-billing uncertainty. If it fails, retain free BYOK rather than shrinking already-sold allowances. Open a 7-day account trial only after rate limiting, budget circuit breakers, cancellation and deletion work; do not issue perpetual trials per device.
 
-## English
+Execution entry: [issue #2](https://github.com/turinglambdaai/hackdigest/issues/2). Complete this bounded slice before expanding commercial features.
 
-Launch design, not a live offer. HackDigest: 托管目标：¥19 / US$3 每月；¥190 / US$30 每年；不售终身托管. Hosted service only, with explicit account quotas. BYOK/local or self-hosted functionality remains free. No lifetime hosting offer.
-
-组合定位及通用边界：[PORTFOLIO](https://github.com/turinglambdaai/turinglambdaai.github.io/blob/master/PORTFOLIO.md)。
+Portfolio role and shared boundaries: [PORTFOLIO](https://github.com/turinglambdaai/turinglambdaai.github.io/blob/master/PORTFOLIO.md).
