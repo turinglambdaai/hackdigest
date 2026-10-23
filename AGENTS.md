@@ -1,5 +1,9 @@
 # AGENTS.md
 
+## Authorization decision before implementation
+
+Decision `2026-10-auth-1`: Online hosted-service entitlement, verified on the server with current account state and atomic quotas; no desktop activation lease. Read the complete [local authorization decision](PRICING.md#authorization-decision-for-implementation) and its Chinese counterpart before commercial, trial, update-eligibility or credential work. Record this decision revision and the source/policy SHAs actually read in the PR/handoff. Refresh at each bounded slice; existing agent conversations do not receive this change automatically. Follow the existing product contract and implementation issue; do not activate a payment gate merely because a plan exists.
+
 HackDigest uses one Racket/Glaze backend in `backend/` and a React/Vite frontend in `apps/desktop/`.
 `backend/main.rkt` exports `api` and starts the application only in `module+ main`.
 `glaze.rktd` and `glaze-schema.json` own its reviewed application contract.
