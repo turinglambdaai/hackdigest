@@ -7,6 +7,11 @@ releases and tags were withdrawn.
 
 ## [Unreleased]
 
+### Added
+
+- Commit the real backend Glaze schema baseline and project manifest, with a CI compatibility check that imports the API without opening a window or database. Document the current delivery priorities and bounded hosted-usage policy.
+
+
 ## 0.3.1 - 2026-10-14
 
 Alignment release: the docs catch up with what v0.3.0 already ships, the
