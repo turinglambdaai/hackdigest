@@ -73,14 +73,13 @@ for people who just want it to work — no keys, no setup.
 | Translate stories & comment threads | ✅ unlimited | ✅ no setup |
 | Article TL;DR, thread digest, daily digest | ✅ unlimited | ✅ no setup |
 | Bring your own LLM API key | ✅ GLM / DeepSeek / Qwen / Kimi / Ollama … | — not needed |
-| Hosted service (no key, fair-use daily quota†) | 7-day free trial per device | ✅ fair-use unlimited† |
+| Hosted service (no key, fair-use daily quota†) | 7-day free trial per device | Planned: explicit daily quota† |
 | Cross-device sync (one license, desktop + mobile) | — | Planned (Phase 3) |
 
-† The Pro *hosted* service uses generous daily quotas plus globally shared
-translation caches (HN traffic concentrates on a few hundred stories, so
-cached threads cost nothing to serve). This keeps a flat subscription
-sustainable without rate-limiting anyone who reads like a human. Bring your
-own key and nothing here applies — that path is free and unlimited, forever.
+† Hosted plans must publish their daily allowance, exhaustion/stop behavior,
+provider/model scope and cancellation terms before sales. Measure cache hits
+and uncached p95 cost first; no unlimited hosted-usage promise is made. BYOK
+has no application-imposed usage quota; your provider's charges and limits apply.
 
 ## Roadmap
 
@@ -145,3 +144,11 @@ AGPL-3.0 — the client is open source, forever. Hosted translation, digest
 compute, and cross-device sync are the Pro subscription that keeps the
 lights on. Competitors are welcome to read the code; users are welcome to
 self-host their own keys.
+
+## Delivery priorities (2026-10-23)
+
+The current product review issue linked from AGENTS owns the next bounded slice and its acceptance scenarios. Follow the existing product specification and the [family delivery standard](https://github.com/turinglambdaai/turinglambdaai.github.io/blob/master/docs/PRODUCT-STANDARD.md). Hardware, native-platform and live-payment gates remain explicit; this documentation update does not claim they passed.
+
+## Feedback and diagnostics
+
+Report reproducible bugs and feature requests through [GitHub Issues](https://github.com/turinglambdaai/hackdigest/issues). Include the release, OS/architecture and steps; inspect and redact diagnostics before sharing. Do not post API keys, license files, vault contents or private documents. For sensitive security reports, follow SECURITY.md when present; otherwise request a private contact route without disclosing sensitive details. Nothing is uploaded automatically.

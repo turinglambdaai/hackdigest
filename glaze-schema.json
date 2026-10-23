@@ -1,0 +1,550 @@
+{
+  "format": "glaze-schema",
+  "format-version": 1,
+  "glz": 1,
+  "routes": [
+    {
+      "method": "GET",
+      "path": "/api/health"
+    },
+    {
+      "method": "POST",
+      "path": "/api/kv/get"
+    },
+    {
+      "method": "POST",
+      "path": "/api/kv/set"
+    },
+    {
+      "method": "POST",
+      "path": "/api/translations/get"
+    },
+    {
+      "method": "POST",
+      "path": "/api/translations/get-batch"
+    },
+    {
+      "method": "POST",
+      "path": "/api/translations/put"
+    },
+    {
+      "method": "POST",
+      "path": "/api/items/get"
+    },
+    {
+      "method": "POST",
+      "path": "/api/items/put"
+    },
+    {
+      "method": "POST",
+      "path": "/api/data/read"
+    },
+    {
+      "method": "POST",
+      "path": "/api/data/write"
+    },
+    {
+      "method": "POST",
+      "path": "/api/llm/test"
+    },
+    {
+      "method": "POST",
+      "path": "/api/llm/chat"
+    },
+    {
+      "method": "POST",
+      "path": "/api/llm/chat/stream"
+    },
+    {
+      "method": "POST",
+      "path": "/api/translate/story"
+    },
+    {
+      "method": "POST",
+      "path": "/api/translate/titles"
+    },
+    {
+      "method": "POST",
+      "path": "/api/translate/comments"
+    },
+    {
+      "method": "POST",
+      "path": "/api/digest/thread"
+    },
+    {
+      "method": "POST",
+      "path": "/api/digest/tldr"
+    },
+    {
+      "method": "POST",
+      "path": "/api/digest/daily"
+    },
+    {
+      "method": "POST",
+      "path": "/api/open"
+    },
+    {
+      "method": "POST",
+      "path": "/api/update/check"
+    },
+    {
+      "method": "POST",
+      "path": "/api/update/start"
+    },
+    {
+      "method": "POST",
+      "path": "/api/update/state"
+    },
+    {
+      "method": "POST",
+      "path": "/api/update/install"
+    }
+  ],
+  "schema": {
+    "commands": [
+      {
+        "errors": [],
+        "name": "dataRead",
+        "parameters": [
+          {
+            "name": "name",
+            "type": {
+              "kind": "scalar",
+              "name": "String"
+            }
+          }
+        ],
+        "result": {
+          "kind": "scalar",
+          "name": "Value"
+        }
+      },
+      {
+        "errors": [],
+        "name": "dataWrite",
+        "parameters": [
+          {
+            "name": "name",
+            "type": {
+              "kind": "scalar",
+              "name": "String"
+            }
+          },
+          {
+            "name": "json",
+            "type": {
+              "kind": "scalar",
+              "name": "String"
+            }
+          }
+        ],
+        "result": {
+          "kind": "scalar",
+          "name": "Value"
+        }
+      },
+      {
+        "errors": [
+          "invalid-args",
+          "capability-denied",
+          "token-required",
+          "timed-out",
+          "cancelled",
+          "internal"
+        ],
+        "name": "digestDaily",
+        "parameters": [],
+        "result": {
+          "kind": "scalar",
+          "name": "Value"
+        }
+      },
+      {
+        "errors": [
+          "invalid-args",
+          "capability-denied",
+          "token-required",
+          "timed-out",
+          "cancelled",
+          "internal"
+        ],
+        "name": "digestThread",
+        "parameters": [],
+        "result": {
+          "kind": "scalar",
+          "name": "Value"
+        }
+      },
+      {
+        "errors": [
+          "invalid-args",
+          "capability-denied",
+          "token-required",
+          "timed-out",
+          "cancelled",
+          "internal"
+        ],
+        "name": "digestTldr",
+        "parameters": [],
+        "result": {
+          "kind": "scalar",
+          "name": "Value"
+        }
+      },
+      {
+        "errors": [
+          "invalid-args",
+          "capability-denied",
+          "token-required",
+          "timed-out",
+          "cancelled",
+          "internal"
+        ],
+        "name": "health",
+        "parameters": [],
+        "result": {
+          "kind": "scalar",
+          "name": "Value"
+        }
+      },
+      {
+        "errors": [],
+        "name": "itemsGet",
+        "parameters": [
+          {
+            "name": "id",
+            "type": {
+              "kind": "scalar",
+              "name": "Int64"
+            }
+          }
+        ],
+        "result": {
+          "kind": "scalar",
+          "name": "Value"
+        }
+      },
+      {
+        "errors": [],
+        "name": "itemsPut",
+        "parameters": [
+          {
+            "name": "items",
+            "type": {
+              "element": {
+                "element": {
+                  "kind": "scalar",
+                  "name": "Value"
+                },
+                "kind": "list"
+              },
+              "kind": "list"
+            }
+          }
+        ],
+        "result": {
+          "kind": "scalar",
+          "name": "Value"
+        }
+      },
+      {
+        "errors": [],
+        "name": "kvGet",
+        "parameters": [
+          {
+            "name": "key",
+            "type": {
+              "kind": "scalar",
+              "name": "String"
+            }
+          }
+        ],
+        "result": {
+          "kind": "scalar",
+          "name": "Value"
+        }
+      },
+      {
+        "errors": [],
+        "name": "kvSet",
+        "parameters": [
+          {
+            "name": "key",
+            "type": {
+              "kind": "scalar",
+              "name": "String"
+            }
+          },
+          {
+            "name": "value",
+            "type": {
+              "kind": "scalar",
+              "name": "String"
+            }
+          }
+        ],
+        "result": {
+          "kind": "scalar",
+          "name": "Value"
+        }
+      },
+      {
+        "errors": [
+          "invalid-args",
+          "capability-denied",
+          "token-required",
+          "timed-out",
+          "cancelled",
+          "internal"
+        ],
+        "name": "llmChat",
+        "parameters": [],
+        "result": {
+          "kind": "scalar",
+          "name": "Value"
+        }
+      },
+      {
+        "errors": [
+          "invalid-args",
+          "capability-denied",
+          "token-required",
+          "timed-out",
+          "cancelled",
+          "internal"
+        ],
+        "name": "llmChatStream",
+        "parameters": [],
+        "result": {
+          "kind": "scalar",
+          "name": "Value"
+        }
+      },
+      {
+        "errors": [
+          "invalid-args",
+          "capability-denied",
+          "token-required",
+          "timed-out",
+          "cancelled",
+          "internal"
+        ],
+        "name": "llmTest",
+        "parameters": [],
+        "result": {
+          "kind": "scalar",
+          "name": "Value"
+        }
+      },
+      {
+        "errors": [
+          "invalid-args",
+          "capability-denied",
+          "token-required",
+          "timed-out",
+          "cancelled",
+          "internal"
+        ],
+        "name": "open",
+        "parameters": [],
+        "result": {
+          "kind": "scalar",
+          "name": "Value"
+        }
+      },
+      {
+        "errors": [
+          "invalid-args",
+          "capability-denied",
+          "token-required",
+          "timed-out",
+          "cancelled",
+          "internal"
+        ],
+        "name": "translateComments",
+        "parameters": [],
+        "result": {
+          "kind": "scalar",
+          "name": "Value"
+        }
+      },
+      {
+        "errors": [
+          "invalid-args",
+          "capability-denied",
+          "token-required",
+          "timed-out",
+          "cancelled",
+          "internal"
+        ],
+        "name": "translateStory",
+        "parameters": [],
+        "result": {
+          "kind": "scalar",
+          "name": "Value"
+        }
+      },
+      {
+        "errors": [
+          "invalid-args",
+          "capability-denied",
+          "token-required",
+          "timed-out",
+          "cancelled",
+          "internal"
+        ],
+        "name": "translateTitles",
+        "parameters": [],
+        "result": {
+          "kind": "scalar",
+          "name": "Value"
+        }
+      },
+      {
+        "errors": [],
+        "name": "translationsGet",
+        "parameters": [
+          {
+            "name": "itemId",
+            "type": {
+              "kind": "scalar",
+              "name": "Int64"
+            }
+          },
+          {
+            "name": "lang",
+            "type": {
+              "kind": "scalar",
+              "name": "String"
+            }
+          }
+        ],
+        "result": {
+          "kind": "scalar",
+          "name": "Value"
+        }
+      },
+      {
+        "errors": [],
+        "name": "translationsGetBatch",
+        "parameters": [
+          {
+            "name": "itemIds",
+            "type": {
+              "element": {
+                "kind": "scalar",
+                "name": "Int64"
+              },
+              "kind": "list"
+            }
+          },
+          {
+            "name": "lang",
+            "type": {
+              "kind": "scalar",
+              "name": "String"
+            }
+          }
+        ],
+        "result": {
+          "kind": "scalar",
+          "name": "Value"
+        }
+      },
+      {
+        "errors": [],
+        "name": "translationsPut",
+        "parameters": [
+          {
+            "name": "rows",
+            "type": {
+              "element": {
+                "element": {
+                  "kind": "scalar",
+                  "name": "Value"
+                },
+                "kind": "list"
+              },
+              "kind": "list"
+            }
+          }
+        ],
+        "result": {
+          "kind": "scalar",
+          "name": "Value"
+        }
+      },
+      {
+        "errors": [
+          "invalid-args",
+          "capability-denied",
+          "token-required",
+          "timed-out",
+          "cancelled",
+          "internal"
+        ],
+        "name": "updateCheck",
+        "parameters": [],
+        "result": {
+          "kind": "scalar",
+          "name": "Value"
+        }
+      },
+      {
+        "errors": [
+          "invalid-args",
+          "capability-denied",
+          "token-required",
+          "timed-out",
+          "cancelled",
+          "internal"
+        ],
+        "name": "updateInstall",
+        "parameters": [],
+        "result": {
+          "kind": "scalar",
+          "name": "Value"
+        }
+      },
+      {
+        "errors": [
+          "invalid-args",
+          "capability-denied",
+          "token-required",
+          "timed-out",
+          "cancelled",
+          "internal"
+        ],
+        "name": "updateStart",
+        "parameters": [],
+        "result": {
+          "kind": "scalar",
+          "name": "Value"
+        }
+      },
+      {
+        "errors": [
+          "invalid-args",
+          "capability-denied",
+          "token-required",
+          "timed-out",
+          "cancelled",
+          "internal"
+        ],
+        "name": "updateState",
+        "parameters": [],
+        "result": {
+          "kind": "scalar",
+          "name": "Value"
+        }
+      }
+    ],
+    "contract": 1,
+    "enums": [],
+    "events": [],
+    "id": "glaze-routes",
+    "records": [],
+    "revision": 1,
+    "states": []
+  }
+}

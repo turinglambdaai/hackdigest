@@ -34,6 +34,11 @@ var _hmt = _hmt || [];
   s.parentNode.insertBefore(hm, s);
 })();
 </script>
+<style>
+  #product-support { display:flex; flex-wrap:wrap; justify-content:center; gap:12px 24px; padding:24px; font:inherit; border-top:1px solid var(--border, #a8a29e); }
+  #product-support a:focus-visible { outline:2px solid currentColor; outline-offset:4px; }
+  html:lang(en) #product-support .support-zh, html:lang(zh) #product-support .support-en { display:none; }
+</style>
 </head>
 
 <body>
@@ -158,7 +163,7 @@ var _hmt = _hmt || [];
                     <li data-i18n="p1">托管翻译，免配置免 Key 开箱即用</li>
                     <li data-i18n="p2">每日晨报自动送达</li>
                     <li data-i18n="p3">跨设备同步（桌面 + 手机，一份授权）</li>
-                    <li data-i18n="p4">合理使用内无限 · 全局共享缓存</li>
+                    <li data-i18n="p4">托管配额与成本边界规划中</li>
                 </ul>
                 <a class="btn btn-ghost disabled" href="#" onclick="return false" data-i18n="cta_wait">敬请期待</a>
             </div>
@@ -193,6 +198,7 @@ var _hmt = _hmt || [];
         <p><a href="https://github.com/turinglambdaai/hackdigest" target="_blank" rel="noopener">GitHub</a> · <a
                 href="https://jrtx.site" target="_blank" rel="noopener">jrtx.site</a></p>
     </footer>
+<nav id="product-support" aria-label="Support / 支持"><a href="https://github.com/turinglambdaai/hackdigest/issues"><span class="support-zh">反馈</span><span class="support-en" lang="en">Feedback</span></a> <a href="https://github.com/turinglambdaai/hackdigest/releases"><span class="support-zh">发布与更新</span><span class="support-en" lang="en">Releases</span></a> <a href="https://github.com/turinglambdaai/hackdigest/blob/main/LICENSE"><span class="support-zh">源码许可</span><span class="support-en" lang="en">Source license</span></a></nav>
 
     <script>
         const I18N = {
@@ -212,7 +218,7 @@ var _hmt = _hmt || [];
                 f3: 'Bookmarks, read history, dark mode', f4: 'GLM / DeepSeek / Qwen / Kimi / Ollama direct',
                 pro_badge: 'Soft launch — 7-day free trial', pro_price: 'Subscription / one-time',
                 p1: 'Hosted translation — no setup, no key', p2: 'Daily digest, delivered',
-                p3: 'Cross-device sync (desktop + mobile, one license)', p4: 'Fair-use unlimited · shared caches',
+                p3: 'Cross-device sync (desktop + mobile, one license)', p4: 'Hosted quotas and cost limits in planning',
                 cta_download: 'Download now', cta_wait: 'Coming soon',
                 dl_title: 'Download', dl_desc: 'Every installer is built from source by GitHub CI and launch-smoke-tested on all three platforms. In-app updates ship as of v0.3.0: the app fetches an Ed25519-signed manifest on startup, portable installs on macOS and Windows swap in place, Linux downloads the archive and reveals it — installer channels (DMG / MSI / deb / rpm) point at the release page.',
                 dl_win: 'Windows 10/11 · MSI', dl_mac: 'Apple Silicon / Intel · DMG / ZIP', dl_linux: 'x64 / arm64 · tar.gz · deb · rpm · AppImage · zip',

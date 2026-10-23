@@ -48,3 +48,6 @@ jobs:
 
       - name: Backend tests
         run: raco test backend/
+
+      - name: Application schema compatibility
+        run: raco glaze schema check --json
