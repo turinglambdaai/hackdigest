@@ -12,6 +12,12 @@ hundreds of millions of developers, a wall of English. HackDigest tears that
 wall down: every story, article TL;DR, and comment thread, translated and
 digested on demand.
 
+## Start here
+
+All client features are free with your own model key; provider charges apply. Hosted translation is not open for purchase. Desktop previews for macOS, Windows and Linux on Glaze. Native transport, packaged behavior and secret-storage parity still require release qualification.
+
+[Installation, first use, privacy, backup and recovery](docs/USER-GUIDE.md) · [简体中文](docs/USER-GUIDE.zh-CN.md)
+
 ## Download
 
 Grab the latest build from
@@ -114,15 +120,3 @@ hackdigest/
 AGPL-3.0 — the client is open source, forever. Hosted translation, digest
 compute are the planned hosted subscription. Sync is not included in the launch offer. Competitors are welcome to read the code; users are welcome to
 self-host their own keys.
-
-## Delivery priorities (2026-10-23)
-
-The current product review issue linked from AGENTS owns the next bounded slice and its acceptance scenarios. Follow the existing product specification and the [family delivery standard](https://github.com/turinglambdaai/turinglambdaai.github.io/blob/master/docs/PRODUCT-STANDARD.md). Hardware, native-platform and live-payment gates remain explicit; this documentation update does not claim they passed.
-
-## Feedback and diagnostics
-
-Report reproducible bugs and feature requests through [GitHub Issues](https://github.com/turinglambdaai/hackdigest/issues). Include the release, OS/architecture and steps; inspect and redact diagnostics before sharing. Do not post API keys, license files, vault contents or private documents. For sensitive security reports, follow SECURITY.md when present; otherwise request a private contact route without disclosing sensitive details. Nothing is uploaded automatically.
-
-## Product & pricing
-
-Free BYOK with a capped hosted subscription. Read the complete [English pricing and product policy](PRICING.md) or [简体中文](PRICING.zh-CN.md) for target prices, free/paid boundaries and launch gates. This is a launch design, not a live offer; this documentation does not add payment restrictions to current development builds.

@@ -34,6 +34,8 @@ var _hmt = _hmt || [];
   s.parentNode.insertBefore(hm, s);
 })();
 </script>
+<style>.lang-menu li.lang-choice{padding:0}.lang-menu .lang-choice button{display:block;width:100%;padding:8px 12px;border:0;background:transparent;color:inherit;font:inherit;text-align:left;cursor:pointer}.lang-menu .lang-choice button:focus-visible{outline:2px solid currentColor;outline-offset:-2px;border-radius:4px}</style>
+<style>.guide-status{margin:20px 0;padding:16px 20px;border:1px solid currentColor;border-radius:10px;font-size:.95rem;line-height:1.65}.guide-status p{margin:0 0 8px}.guide-status a{text-decoration:underline;text-underline-offset:4px}html:lang(en) .reader-zh,html:lang(zh) .reader-en{display:none!important}</style>
 </head>
 
 <body>
@@ -53,8 +55,8 @@ var _hmt = _hmt || [];
                         <span id="current-lang-label">简体中文</span>
                     </button>
                     <ul class="lang-menu">
-                        <li onclick="setLanguage('en')">English</li>
-                        <li onclick="setLanguage('zh')">简体中文</li>
+                        <li class="lang-choice"><button type="button" onclick="setLanguage('en')">English</button></li>
+                        <li class="lang-choice"><button type="button" onclick="setLanguage('zh')">简体中文</button></li>
                     </ul>
                 </div>
                 <button class="theme-btn" id="theme-btn" type="button" aria-label="Toggle theme">◐</button>
@@ -65,6 +67,7 @@ var _hmt = _hmt || [];
     <header class="guide-hero">
         <span class="eyebrow" data-i18n="g_eyebrow">使用手册</span>
         <h1 data-i18n="g_title">五分钟，读懂 Hacker News。</h1>
+<aside class="guide-status"><p class="reader-en " lang="en">All client features are free with your own model key; provider charges apply. Hosted translation is not open for purchase.</p><p class="reader-zh " lang="zh">全部客户端功能可免费使用自己的模型密钥，模型费用另计。托管翻译尚未开放购买。</p><a class="reader-en" lang="en" href="https://github.com/turinglambdaai/hackdigest/blob/main/docs/USER-GUIDE.md">Current installation, privacy and recovery</a><a class="reader-zh" lang="zh" href="https://github.com/turinglambdaai/hackdigest/blob/main/docs/USER-GUIDE.zh-CN.md">当前安装、隐私与恢复</a></aside>
         <p class="lead" data-i18n="g_lead">安装、配 Key、读第一篇带翻译的 HN 帖 —— 本页一次说清。其余内容按需查。</p>
     </header>
 
@@ -106,7 +109,7 @@ var _hmt = _hmt || [];
                 <h2 data-i18n="eng_title">⚙️ 选翻译引擎</h2>
                 <p data-i18n="eng_intro">翻译、摘要都走一个 OpenAI 兼容端点。在 设置 → AI → 提供商 里选。</p>
                 <ul>
-                    <li data-i18n="eng_1"><strong>HackDigest Pro（托管）</strong>—— 免配置免 Key，开箱即用；每设备 7 天免费试用，之后需要 License Key。适合「只想能用」。</li>
+                    <li data-i18n="eng_1">托管翻译尚未开放；请使用自己的模型端点和密钥，不购买终身托管或设备试用码。</li>
                     <li data-i18n="eng_2"><strong>国产直连</strong>—— 智谱 GLM（含 GLM Coding Plan 专属端点）、DeepSeek、通义千问、Kimi。国内网络可达，注册即有额度。适合大多数国内用户。</li>
                     <li data-i18n="eng_3"><strong>OpenAI / Ollama（本地）/ 自定义</strong>—— 有国际卡用 OpenAI；要完全离线用 Ollama（<code>http://localhost:11434</code>）；其他任意 OpenAI 兼容服务选「自定义」并填 Base URL。</li>
                 </ul>
@@ -180,15 +183,15 @@ var _hmt = _hmt || [];
                 <h2 data-i18n="priv_title">🔒 隐私</h2>
                 <ul>
                     <li data-i18n="priv_1">无账号、无遥测。BYOK 模式下，翻译请求从本机直达你选的服务商。</li>
-                    <li data-i18n="priv_2">API Key 只存本机后端，webview 拿不到，也不上传。</li>
+                    <li data-i18n="priv_2">API key 由本地后端用于向你选择的服务商鉴权；尚不能将密钥存储描述为各平台均通过安全存储验收。不要分享配置文件。</li>
                     <li data-i18n="priv_3">HN 数据来自官方 API 与 Algolia 搜索，不爬虫、不落地到我们的服务器。</li>
-                    <li data-i18n="priv_4">只有 Pro 托管模式经我们的服务器转发，并使用全局共享翻译缓存（帖子级缓存，不含个人信息）。</li>
+                    <li data-i18n="priv_4">托管翻译尚未开放，不把全局缓存或付费服务描述为已经交付。</li>
                 </ul>
             </section>
 
             <section class="guide-section" id="faq-account">
                 <h2 data-i18n="acct_title">👤 要注册账号吗？</h2>
-                <p data-i18n="acct_1">不用。BYOK 全功能免费，永远不需要账号。只有用 Pro 托管服务（免 Key 开箱即用）才涉及授权：每设备 7 天免费试用，之后购买终身 / 年度 License Key 填入即可，依旧没有账号体系。</p>
+                <p data-i18n="acct_1">BYOK 客户端免费，不要求商业账号，服务商用量另计。未来托管服务需账号、服务端权益与配额校验，目前未开放；不销售终身托管或每设备试用码。</p>
             </section>
 
             <section class="guide-section" id="faq-platforms">
@@ -197,7 +200,7 @@ var _hmt = _hmt || [];
                     <li data-i18n="plat_1"><strong>macOS</strong> —— Apple Silicon 与 Intel 双架构，.dmg 安装版 + .zip 便携版。</li>
                     <li data-i18n="plat_2"><strong>Windows</strong> —— Windows 10/11 x64，.msi 安装版 + .zip 便携版。</li>
                     <li data-i18n="plat_3"><strong>Linux</strong> —— x64 与 arm64 双架构，.tar.gz / .deb / .rpm / .AppImage / .zip 五种格式；需系统 WebKitGTK 4.1。</li>
-                    <li data-i18n="plat_4"><strong>移动端</strong>—— iOS / iPadOS / Android 在路线图（Phase 3），尚未开始。</li>
+                    <li data-i18n="plat_4">移动端尚未交付；桌面原生传输、打包和密钥存储验收优先。</li>
                 </ul>
             </section>
 
@@ -250,7 +253,7 @@ var _hmt = _hmt || [];
                 qs_5: "<strong>Read your first thread.</strong> The home screen is the HN front page with titles already translated. Press <code>j</code>/<code>k</code> to move, <code>Enter</code> to open; in a thread press <code>t</code> to translate it, <code>Shift+T</code> for all comments, <code>d</code> for the AI digest. Press <code>?</code> anytime for the cheat sheet.",
                 eng_title: '⚙️ Choose a translation engine',
                 eng_intro: 'Translation and digests go through one OpenAI-compatible endpoint. Pick it in Settings → AI → Provider.',
-                eng_1: "<strong>HackDigest Pro (hosted)</strong> — no setup, no key; a 7-day free trial per device, then a license key. For \"just make it work\".",
+                eng_1: "Hosted translation is not open. Use your own endpoint/key; no lifetime hosting or device-trial code is for sale.",
                 eng_2: "<strong>China-reachable</strong> — Zhipu GLM (including the GLM Coding Plan endpoint), DeepSeek, Qwen, Kimi. Reachable from mainland networks, sign-up grants free quota. Best for most mainland users.",
                 eng_3: "<strong>OpenAI / Ollama (local) / Custom</strong> — OpenAI if you have an international card; Ollama for fully local (<code>http://localhost:11434</code>); any other OpenAI-compatible service under Custom with its base URL.",
                 eng_note: 'Switching engines takes effect immediately; cached translations carry over. A thread is never translated twice — switching only affects future work.',
@@ -284,16 +287,16 @@ var _hmt = _hmt || [];
                 data_2: 'The translation cache lives there too — a thread is translated once. Caches do not migrate across devices (re-translating is cheap).',
                 priv_title: '🔒 Privacy',
                 priv_1: 'No account, no telemetry. In BYOK mode, translation requests go from your machine straight to the provider you picked.',
-                priv_2: 'The API key is stored only in the local backend — the webview cannot touch it, and it is never uploaded.',
+                priv_2: "The local backend uses the API key to authenticate to your chosen provider. Cross-platform secure storage has not been qualified; do not share configuration files.",
                 priv_3: 'HN data comes from the official API and Algolia search — no scraping, nothing lands on our servers.',
-                priv_4: 'Only the hosted Pro plan relays through our servers and uses the globally shared translation cache (story-level cache, no personal data).',
+                priv_4: "Hosted translation is not open; a global cache or paid service is not a delivered offer.",
                 acct_title: '👤 Do I need an account?',
-                acct_1: 'No. BYOK is free forever and never needs an account. Only the hosted Pro plan (no-key, zero setup) involves licensing: a 7-day free trial per device, then a lifetime / yearly license key — still no account system.',
+                acct_1: "The free BYOK client needs no commercial account; provider usage is billed separately. Future hosting requires account-scoped server rights and quotas and is not open. There is no lifetime hosting or per-device trial code for sale.",
                 plat_title: '🖥️ Platforms',
                 plat_1: "<strong>macOS</strong> — Apple Silicon and Intel, .dmg installer + portable .zip.",
                 plat_2: "<strong>Windows</strong> — Windows 10/11 x64, .msi installer + portable .zip.",
                 plat_3: "<strong>Linux</strong> — x64 and arm64, five formats: .tar.gz / .deb / .rpm / .AppImage / .zip; needs system WebKitGTK 4.1.",
-                plat_4: "<strong>Mobile</strong> — iOS / iPadOS / Android are on the roadmap (Phase 3), not started yet.",
+                plat_4: "Mobile is not delivered. Desktop native transport, packaging and secret-storage qualification take priority.",
                 upd_title: '🔄 Updates',
                 upd_1: 'In-app updates ship as of v0.3.0: on startup the app fetches an Ed25519-signed manifest, and when a new version is out the next step depends on how you installed —',
                 upd_2: "<strong>Portable installs (macOS .zip / Windows .zip)</strong> — one click, swapped in place, automatic relaunch.",

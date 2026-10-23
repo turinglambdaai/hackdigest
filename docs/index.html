@@ -39,6 +39,13 @@ var _hmt = _hmt || [];
   #product-support a:focus-visible { outline:2px solid currentColor; outline-offset:4px; }
   html:lang(en) #product-support .support-zh, html:lang(zh) #product-support .support-en { display:none; }
 </style>
+<style id="product-start-style">
+.product-availability{font-size:.95rem;line-height:1.65;max-width:72ch;margin:18px 0;opacity:.85} .hero .product-availability{margin-left:auto;margin-right:auto}
+.product-start{max-width:1120px;margin:64px auto;padding:32px 24px;border-top:1px solid var(--border,#aaa);font:inherit;line-height:1.65}
+.product-start h2{font-size:clamp(1.7rem,3vw,2.4rem);letter-spacing:-.025em;margin:0 0 16px}.product-start h3{font-size:1.05rem;margin:0 0 10px}.product-start p{margin:0 0 16px;max-width:74ch}.product-start-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:28px;margin:28px 0}.product-start a{text-decoration:underline;text-underline-offset:4px;overflow-wrap:anywhere}.product-start a:focus-visible{outline:2px solid currentColor;outline-offset:5px}.product-start .start-links{display:flex;gap:16px 24px;flex-wrap:wrap}.product-start .start-status{font-weight:600}.product-start .start-limits{font-size:.95em}
+html:lang(en) .reader-zh,html:lang(zh) .reader-en{display:none!important}@media(max-width:700px){.product-start{margin:40px auto;padding:24px 20px}.product-start-grid{grid-template-columns:1fr;gap:18px}}
+</style>
+<style>.lang-menu li.lang-choice{padding:0}.lang-menu .lang-choice button{display:block;width:100%;padding:8px 12px;border:0;background:transparent;color:inherit;font:inherit;text-align:left;cursor:pointer}.lang-menu .lang-choice button:focus-visible{outline:2px solid currentColor;outline-offset:-2px;border-radius:4px}</style>
 </head>
 
 <body>
@@ -50,7 +57,7 @@ var _hmt = _hmt || [];
             </a>
             <div class="nav-links">
                 <a href="#digests" data-i18n="nav_digests">三层 Digest</a>
-                <a href="#pricing" data-i18n="nav_pricing">免费与 Pro</a>
+                <a href="#start-here" data-i18n="nav_pricing">开始使用</a>
                 <a href="#download" data-i18n="nav_download">下载</a>
                 <a href="guide.html" data-i18n="nav_guide">使用手册</a>
                 <div class="lang-dropdown-wrapper">
@@ -59,8 +66,8 @@ var _hmt = _hmt || [];
                         <span id="current-lang-label">简体中文</span>
                     </button>
                     <ul class="lang-menu">
-                        <li onclick="setLanguage('en')">English</li>
-                        <li onclick="setLanguage('zh')">简体中文</li>
+                        <li class="lang-choice"><button type="button" onclick="setLanguage('en')">English</button></li>
+                        <li class="lang-choice"><button type="button" onclick="setLanguage('zh')">简体中文</button></li>
                     </ul>
                 </div>
                 <button class="theme-btn" id="theme-btn" type="button" aria-label="Toggle theme">◐</button>
@@ -71,6 +78,7 @@ var _hmt = _hmt || [];
     <header class="hero">
         <div class="hero-copy">
             <h1>Hacker News, <em>in your language.</em></h1>
+<p class="reader-en product-availability" lang="en">Development preview. All client features are free with your own model key; provider charges apply. Hosted translation is not open for purchase.</p><p class="reader-zh product-availability" lang="zh">开发预览。全部客户端功能可免费使用自己的模型密钥，模型费用另计。托管翻译尚未开放购买。</p>
             <p class="hero-sub" data-i18n="hero_sub">把全球最好的技术首页读成中文 —— 每条新闻、每篇原文、每个评论楼，按需翻译、按需摘要。</p>
             <div class="hero-cta">
                 <a class="btn btn-primary" href="https://github.com/turinglambdaai/hackdigest/releases/latest/download/hackdigest-macos-arm64.dmg"
@@ -138,37 +146,7 @@ var _hmt = _hmt || [];
         </div>
     </section>
 
-    <section class="section section-alt" id="pricing">
-        <div class="section-header">
-            <h2 data-i18n="pricing_title">免费，是真的免费</h2>
-            <p data-i18n="pricing_desc">客户端与 BYOK 全功能免费；模型供应商自身费用与配额适用。</p>
-        </div>
-        <div class="pricing-grid">
-            <div class="pricing-card">
-                <h3 data-i18n="free_title">Free + 自带 Key</h3>
-                <div class="price" data-i18n="free_price">¥0</div>
-                <ul>
-                    <li data-i18n="f1">HN 全部信息流与评论楼</li>
-                    <li data-i18n="f2">翻译与三层 Digest（自带 Key 无限用）</li>
-                    <li data-i18n="f3">收藏、已读历史、深色模式</li>
-                    <li data-i18n="f4">GLM / DeepSeek / 通义 / Kimi / Ollama 直连</li>
-                </ul>
-                <a class="btn btn-primary" href="#download" data-i18n="cta_download">立即下载</a>
-            </div>
-            <div class="pricing-card pro">
-                <div class="pro-badge" data-i18n="pro_badge">规划中 · 尚未开售</div>
-                <h3>Pro</h3>
-                <div class="price" data-i18n="pro_price">目标 ¥19/月 · ¥190/年</div>
-                <ul>
-                    <li data-i18n="p1">托管翻译与摘要，免配置 key（规划）</li>
-                    <li data-i18n="p2">账户每日 20 条标题 + 3 次正文/评论摘要</li>
-                    <li data-i18n="p3">明确长度限制；同步与手机不含在首发套餐</li>
-                    <li data-i18n="p4">成本与服务可靠性验证后开放，不售终身托管</li>
-                </ul>
-                <a class="btn btn-ghost" href="https://github.com/turinglambdaai/hackdigest/blob/main/PRICING.md" data-i18n="cta_wait">查看方案与开卖条件</a>
-            </div>
-        </div>
-    </section>
+
 
     <section class="section" id="download">
         <div class="section-header">
@@ -192,18 +170,21 @@ var _hmt = _hmt || [];
         <p style="text-align:center;margin-top:18px"><a href="https://github.com/turinglambdaai/hackdigest/releases" data-i18n="dl_all" target="_blank" rel="noopener">全部版本</a></p>
     </section>
 
-    <footer class="footer">
+    <section id="start-here" class="product-start" aria-label="Get started / 开始使用">
+<h2 class="reader-en " lang="en">Start with one useful session.</h2><h2 class="reader-zh " lang="zh">从一次有效使用开始。</h2><p class="reader-en start-status" lang="en">All client features are free with your own model key; provider charges apply. Hosted translation is not open for purchase.</p><p class="reader-zh start-status" lang="zh">全部客户端功能可免费使用自己的模型密钥，模型费用另计。托管翻译尚未开放购买。</p><p class="reader-en " lang="en">Desktop previews for macOS, Windows and Linux on Glaze. Native transport, packaged behavior and secret-storage parity still require release qualification.</p><p class="reader-zh " lang="zh">基于 Glaze 的 macOS、Windows、Linux 桌面预览。原生传输、打包行为和密钥存储一致性仍需发行验收。</p><div class="product-start-grid"><article><h3 class="reader-en " lang="en">01</h3><h3 class="reader-zh " lang="zh">01</h3><p class="reader-en " lang="en">Open a feed and read one story in its original form.</p><p class="reader-zh " lang="zh">打开一个信息流，先阅读一条原文。</p></article><article><h3 class="reader-en " lang="en">02</h3><h3 class="reader-zh " lang="zh">02</h3><p class="reader-en " lang="en">If you want translation, configure your own compatible model endpoint/key and test one title first.</p><p class="reader-zh " lang="zh">需要翻译时，配置自己的兼容模型端点和密钥，先测试一条标题。</p></article><article><h3 class="reader-en " lang="en">03</h3><h3 class="reader-zh " lang="zh">03</h3><p class="reader-en " lang="en">Request one article or thread digest, compare it with the original and review provider usage before starting bulk requests.</p><p class="reader-zh " lang="zh">生成一份文章或讨论摘要，对照原文，并检查服务商用量后再批量处理。</p></article></div><p class="reader-en start-limits" lang="en">Windows/Linux packaged native parity and secret storage remain tracked in <a href="https://github.com/turinglambdaai/hackdigest/issues/2">#2</a>. No mobile or hosted-sync service is included.</p><p class="reader-zh start-limits" lang="zh">Windows/Linux 打包原生一致性和密钥存储仍在 <a href="https://github.com/turinglambdaai/hackdigest/issues/2">#2</a> 跟进。不包含移动端或托管同步服务。</p><div class="start-links"><a class="reader-en" lang="en" href="https://github.com/turinglambdaai/hackdigest/blob/main/docs/USER-GUIDE.md">Installation, privacy &amp; recovery</a><a class="reader-zh" lang="zh" href="https://github.com/turinglambdaai/hackdigest/blob/main/docs/USER-GUIDE.zh-CN.md">安装、隐私与恢复</a><a href="https://github.com/turinglambdaai/hackdigest/issues"><span class="reader-en " lang="en">Get help</span><span class="reader-zh " lang="zh">反馈与帮助</span></a></div>
+</section>
+<footer class="footer">
         <p>AGPL-3.0 · 数据来自 <a href="https://github.com/HackerNews/API" target="_blank"
                 rel="noopener">Hacker News 官方 API</a></p>
         <p><a href="https://github.com/turinglambdaai/hackdigest" target="_blank" rel="noopener">GitHub</a> · <a
                 href="https://jrtx.site" target="_blank" rel="noopener">jrtx.site</a></p>
     </footer>
-<nav id="product-support" aria-label="Support / 支持"><a href="https://github.com/turinglambdaai/hackdigest/issues"><span class="support-zh">反馈</span><span class="support-en" lang="en">Feedback</span></a> <a href="https://github.com/turinglambdaai/hackdigest/releases"><span class="support-zh">发布与更新</span><span class="support-en" lang="en">Releases</span></a> <a href="https://github.com/turinglambdaai/hackdigest/blob/main/LICENSE"><span class="support-zh">源码许可</span><span class="support-en" lang="en">Source license</span></a> <a class="support-zh" href="https://github.com/turinglambdaai/hackdigest/blob/main/PRICING.zh-CN.md">产品与收费方案</a> <a class="support-en" lang="en" href="https://github.com/turinglambdaai/hackdigest/blob/main/PRICING.md">Product & pricing</a></nav>
+<nav id="product-support" aria-label="Support / 支持"><a href="https://github.com/turinglambdaai/hackdigest/issues"><span class="support-zh">反馈</span><span class="support-en" lang="en">Feedback</span></a> <a href="https://github.com/turinglambdaai/hackdigest/releases"><span class="support-zh">发布与更新</span><span class="support-en" lang="en">Releases</span></a> <a href="https://github.com/turinglambdaai/hackdigest/blob/main/LICENSE"><span class="support-zh">源码许可</span><span class="support-en" lang="en">Source license</span></a> <a class="support-zh" href="https://github.com/turinglambdaai/hackdigest/blob/main/docs/USER-GUIDE.zh-CN.md">使用与帮助</a> <a class="support-en" lang="en" href="https://github.com/turinglambdaai/hackdigest/blob/main/docs/USER-GUIDE.md">Usage & help</a></nav>
 
     <script>
         const I18N = {
             en: {
-                nav_digests: 'Three digests', nav_pricing: 'Free & Pro', nav_download: 'Download', nav_guide: 'User guide',
+                nav_digests: 'Three digests', nav_pricing: 'Get started', nav_download: 'Download', nav_guide: 'User guide',
                 hero_sub: 'The best tech front page on the internet — every story, article, and comment thread, translated and digested into your language on demand.',
                 hero_download: 'Download desktop — free', hero_note: 'Windows · macOS · Linux, free on every platform. AGPL open source; in-app updates since v0.3.0 — portable installs swap in place, installer channels go straight to the release page.',
                 digests_title: 'Three digests tear the English wall down',
@@ -211,15 +192,7 @@ var _hmt = _hmt || [];
                 d1_title: 'Article TL;DR', d1_desc: 'HN links to 5,000-word essays. Compress each into a few paragraphs in your language — know if it is worth reading before you read it.',
                 d2_title: 'Thread digest', d2_desc: 'The gold of HN is the comments. 800 replies become the top arguments on each side, standout comments, and where the community landed.',
                 d3_title: 'Daily digest', d3_desc: 'This morning\'s front page as a two-minute read: grouped by theme, one line on why each story matters.',
-                pricing_title: 'Free means free',
-                pricing_desc: "Free client and all BYOK features; your provider charges and limits still apply.",
-                free_title: 'Free + your own key', free_price: '¥0',
-                f1: 'All HN feeds and comment threads', f2: 'Translation and all three digests (unlimited with your key)',
-                f3: 'Bookmarks, read history, dark mode', f4: 'GLM / DeepSeek / Qwen / Kimi / Ollama direct',
-                pro_badge: "Planned · not on sale", pro_price: "Target $3/month · $30/year",
-                p1: "Hosted translation and digests, no key setup (planned)", p2: "20 titles + 3 article/thread digests per account/day",
-                p3: "Published length caps; sync and mobile not included", p4: "Cost and reliability gates apply; no lifetime hosting",
-                cta_download: 'Download now', cta_wait: "Plan and launch gates",
+
                 dl_title: 'Download', dl_desc: 'Every installer is built from source by GitHub CI and launch-smoke-tested on all three platforms. In-app updates ship as of v0.3.0: the app fetches an Ed25519-signed manifest on startup, portable installs on macOS and Windows swap in place, Linux downloads the archive and reveals it — installer channels (DMG / MSI / deb / rpm) point at the release page.',
                 dl_win: 'Windows 10/11 · MSI', dl_mac: 'Apple Silicon / Intel · DMG / ZIP', dl_linux: 'x64 / arm64 · tar.gz · deb · rpm · AppImage · zip',
                 dl_all: 'All releases',

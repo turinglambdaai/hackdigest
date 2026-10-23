@@ -1,0 +1,47 @@
+# HackDigest user guide
+
+**English** · [简体中文](USER-GUIDE.zh-CN.md)
+
+Read Hacker News with on-demand title translation, article digests and thread summaries.
+
+## Availability
+
+All client features are free with your own model key; provider charges apply. Hosted translation is not open for purchase.
+
+## Platforms and installation
+
+Desktop previews for macOS, Windows and Linux on Glaze. Native transport, packaged behavior and secret-storage parity still require release qualification.
+
+Use [official Releases](https://github.com/turinglambdaai/hackdigest/releases), select an explicitly listed OS/architecture asset, read its release notes and check supplied checksums. An absent asset/platform is not a delivery promise. Preview builds may lack publisher signing or notarization; do not disable system-wide security protections to install them.
+
+## Your first successful session
+
+1. Open a feed and read one story in its original form.
+2. If you want translation, configure your own compatible model endpoint/key and test one title first.
+3. Request one article or thread digest, compare it with the original and review provider usage before starting bulk requests.
+
+## Data, backup and recovery
+
+Back up local settings/bookmarks and the application data directory after quitting. Translation caches may contain article/comment text; settings can contain secrets until secure-storage migration is verified. Inspect backups before syncing or sharing them.
+
+## Network, keys and privacy
+
+Feeds/search contact HN and search services. Translation and summaries send requested titles, article text or comments to your configured model provider. AI summaries can omit context or make errors; open the original source for verification.
+
+## Known limits
+
+Windows/Linux packaged native parity and secret storage remain tracked in #2. No mobile or hosted-sync service is included.
+
+## Updates and removal
+
+Back up data and read the destination release notes first. An in-app update check does not necessarily install an update for your channel; follow the manual for portable, installer and source paths. Never bypass a failed signature check or replace the program with an untrusted artifact. On failure, preserve data and the error, then recover with a trusted release. Removing the program does not necessarily erase its separate data directory; verify your backup before deleting personal data.
+
+## Get help
+
+Report problems in [GitHub Issues](https://github.com/turinglambdaai/hackdigest/issues), in English or Chinese. Include the version, OS/architecture, installation channel, steps, expected result and actual result. Reproduce with synthetic input first; do not attach keys, credentials, databases, private source documents or complete logs. Public support has no guaranteed response time.
+
+## Further reading
+
+- [Detailed manual](../docs/guide.html)
+- [Project overview and development](../README.md)
+- [Current licence](../LICENSE)

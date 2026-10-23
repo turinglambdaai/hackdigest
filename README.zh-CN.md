@@ -8,6 +8,12 @@
 
 Hacker News 大概是互联网上最好的技术首页 —— 但对数以百万计的开发者来说，它也是一堵英文墙。HackDigest 拆掉这堵墙：每一条新闻、每一篇原文、每一个评论楼，按需翻译、按需总结。
 
+## 开始使用
+
+全部客户端功能可免费使用自己的模型密钥，模型费用另计。托管翻译尚未开放购买。 基于 Glaze 的 macOS、Windows、Linux 桌面预览。原生传输、打包行为和密钥存储一致性仍需发行验收。
+
+[安装、首次使用、隐私与备份恢复](docs/USER-GUIDE.zh-CN.md) · [English](docs/USER-GUIDE.md)
+
 ## 下载
 
 到 [GitHub Releases](https://github.com/turinglambdaai/hackdigest/releases/latest) 取最新版本 —— 所有产物由 GitHub CI 从源码构建，并在三平台上通过启动冒烟验证：
@@ -64,11 +70,3 @@ hackdigest/
 ## 许可与商业模式
 
 AGPL-3.0 —— 客户端永久开源。托管翻译与 Digest 算力规划为有配额的订阅，跨设备同步不包含在首发方案。竞品尽管来读代码；用户尽管自带 Key。
-
-## 反馈与诊断
-
-问题和建议请使用 [GitHub Issues](https://github.com/turinglambdaai/hackdigest/issues)，附版本、系统/架构和复现步骤。分享前先检查并脱敏诊断；不要公开 API key、授权凭据、密钥库或私有文档。安全敏感问题优先按 SECURITY.md 联系；未提供私密渠道时，先请求私下联系方式，不在公开 issue 中披露敏感细节。此入口不会自动上传数据。
-
-## 产品与收费
-
-免费 BYOK + 限额托管订阅。首发目标、免费边界与开卖门禁见 [PRICING.md](PRICING.zh-CN.md)；当前仍在开发，没有实际用户，不表示已开售，也不因此给开发版即时加收费墙。
