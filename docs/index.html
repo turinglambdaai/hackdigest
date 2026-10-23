@@ -141,7 +141,7 @@ var _hmt = _hmt || [];
     <section class="section section-alt" id="pricing">
         <div class="section-header">
             <h2 data-i18n="pricing_title">免费，是真的免费</h2>
-            <p data-i18n="pricing_desc">全平台客户端免费下载。翻译与摘要自带 API Key —— 真无限、零配额、永久免费。</p>
+            <p data-i18n="pricing_desc">客户端与 BYOK 全功能免费；模型供应商自身费用与配额适用。</p>
         </div>
         <div class="pricing-grid">
             <div class="pricing-card">
@@ -156,16 +156,16 @@ var _hmt = _hmt || [];
                 <a class="btn btn-primary" href="#download" data-i18n="cta_download">立即下载</a>
             </div>
             <div class="pricing-card pro">
-                <div class="pro-badge" data-i18n="pro_badge">已开放 · 7 天免费试用</div>
+                <div class="pro-badge" data-i18n="pro_badge">规划中 · 尚未开售</div>
                 <h3>Pro</h3>
-                <div class="price" data-i18n="pro_price">订阅 / 买断</div>
+                <div class="price" data-i18n="pro_price">目标 ¥19/月 · ¥190/年</div>
                 <ul>
-                    <li data-i18n="p1">托管翻译，免配置免 Key 开箱即用</li>
-                    <li data-i18n="p2">每日晨报自动送达</li>
-                    <li data-i18n="p3">跨设备同步（桌面 + 手机，一份授权）</li>
-                    <li data-i18n="p4">托管配额与成本边界规划中</li>
+                    <li data-i18n="p1">托管翻译与摘要，免配置 key（规划）</li>
+                    <li data-i18n="p2">账户每日 20 条标题 + 3 次正文/评论摘要</li>
+                    <li data-i18n="p3">明确长度限制；同步与手机不含在首发套餐</li>
+                    <li data-i18n="p4">成本与服务可靠性验证后开放，不售终身托管</li>
                 </ul>
-                <a class="btn btn-ghost disabled" href="#" onclick="return false" data-i18n="cta_wait">敬请期待</a>
+                <a class="btn btn-ghost" href="https://github.com/turinglambdaai/hackdigest/blob/main/PRICING.md" data-i18n="cta_wait">查看方案与开卖条件</a>
             </div>
         </div>
     </section>
@@ -198,7 +198,7 @@ var _hmt = _hmt || [];
         <p><a href="https://github.com/turinglambdaai/hackdigest" target="_blank" rel="noopener">GitHub</a> · <a
                 href="https://jrtx.site" target="_blank" rel="noopener">jrtx.site</a></p>
     </footer>
-<nav id="product-support" aria-label="Support / 支持"><a href="https://github.com/turinglambdaai/hackdigest/issues"><span class="support-zh">反馈</span><span class="support-en" lang="en">Feedback</span></a> <a href="https://github.com/turinglambdaai/hackdigest/releases"><span class="support-zh">发布与更新</span><span class="support-en" lang="en">Releases</span></a> <a href="https://github.com/turinglambdaai/hackdigest/blob/main/LICENSE"><span class="support-zh">源码许可</span><span class="support-en" lang="en">Source license</span></a></nav>
+<nav id="product-support" aria-label="Support / 支持"><a href="https://github.com/turinglambdaai/hackdigest/issues"><span class="support-zh">反馈</span><span class="support-en" lang="en">Feedback</span></a> <a href="https://github.com/turinglambdaai/hackdigest/releases"><span class="support-zh">发布与更新</span><span class="support-en" lang="en">Releases</span></a> <a href="https://github.com/turinglambdaai/hackdigest/blob/main/LICENSE"><span class="support-zh">源码许可</span><span class="support-en" lang="en">Source license</span></a> <a href="https://github.com/turinglambdaai/hackdigest/blob/main/PRICING.md"><span class="support-zh">产品与收费方案</span><span class="support-en" lang="en">Product & pricing</span></a></nav>
 
     <script>
         const I18N = {
@@ -212,14 +212,14 @@ var _hmt = _hmt || [];
                 d2_title: 'Thread digest', d2_desc: 'The gold of HN is the comments. 800 replies become the top arguments on each side, standout comments, and where the community landed.',
                 d3_title: 'Daily digest', d3_desc: 'This morning\'s front page as a two-minute read: grouped by theme, one line on why each story matters.',
                 pricing_title: 'Free means free',
-                pricing_desc: 'Free download on every platform. Bring your own API key — truly unlimited, no quota, forever.',
+                pricing_desc: "Free client and all BYOK features; your provider charges and limits still apply.",
                 free_title: 'Free + your own key', free_price: '¥0',
                 f1: 'All HN feeds and comment threads', f2: 'Translation and all three digests (unlimited with your key)',
                 f3: 'Bookmarks, read history, dark mode', f4: 'GLM / DeepSeek / Qwen / Kimi / Ollama direct',
-                pro_badge: 'Soft launch — 7-day free trial', pro_price: 'Subscription / one-time',
-                p1: 'Hosted translation — no setup, no key', p2: 'Daily digest, delivered',
-                p3: 'Cross-device sync (desktop + mobile, one license)', p4: 'Hosted quotas and cost limits in planning',
-                cta_download: 'Download now', cta_wait: 'Coming soon',
+                pro_badge: "Planned · not on sale", pro_price: "Target $3/month · $30/year",
+                p1: "Hosted translation and digests, no key setup (planned)", p2: "20 titles + 3 article/thread digests per account/day",
+                p3: "Published length caps; sync and mobile not included", p4: "Cost and reliability gates apply; no lifetime hosting",
+                cta_download: 'Download now', cta_wait: "Plan and launch gates",
                 dl_title: 'Download', dl_desc: 'Every installer is built from source by GitHub CI and launch-smoke-tested on all three platforms. In-app updates ship as of v0.3.0: the app fetches an Ed25519-signed manifest on startup, portable installs on macOS and Windows swap in place, Linux downloads the archive and reveals it — installer channels (DMG / MSI / deb / rpm) point at the release page.',
                 dl_win: 'Windows 10/11 · MSI', dl_mac: 'Apple Silicon / Intel · DMG / ZIP', dl_linux: 'x64 / arm64 · tar.gz · deb · rpm · AppImage · zip',
                 dl_all: 'All releases',

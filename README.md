@@ -61,38 +61,9 @@ HN veterans get their muscle memory back: **j/k** move the selection,
 3. **Daily digest** — this morning's front page as a two-minute read in your
    language, before you decide what's worth opening.
 
-## Free / Pro
+## Free / hosted plan
 
-The app is free to download on every platform. Everything can be unlocked
-forever with your own LLM key (BYOK, truly free); the Pro hosted service is
-for people who just want it to work — no keys, no setup.
-
-| | Free (BYOK) | Pro (hosted) |
-|---|---|---|
-| Browse HN, reader-optimized threads, bookmarks, dark mode | ✅ | ✅ |
-| Translate stories & comment threads | ✅ unlimited | ✅ no setup |
-| Article TL;DR, thread digest, daily digest | ✅ unlimited | ✅ no setup |
-| Bring your own LLM API key | ✅ GLM / DeepSeek / Qwen / Kimi / Ollama … | — not needed |
-| Hosted service (no key, fair-use daily quota†) | 7-day free trial per device | Planned: explicit daily quota† |
-| Cross-device sync (one license, desktop + mobile) | — | Planned (Phase 3) |
-
-† Hosted plans must publish their daily allowance, exhaustion/stop behavior,
-provider/model scope and cancellation terms before sales. Measure cache hits
-and uncached p95 cost first; no unlimited hosted-usage promise is made. BYOK
-has no application-imposed usage quota; your provider's charges and limits apply.
-
-## Roadmap
-
-- **Phase 1 — Desktop MVP** ✅ (v0.1.x, Tauri line): HN feeds and threads with
-  a reading experience worth opening daily; translation and digests via BYOK.
-- **Phase 2 — Hosted Pro service** (v0.2.0): managed translation behind a
-  license key — no setup, no keys. 7-day free trial per device, generous daily
-  quotas, globally shared caches. Soft launch; sales start manual (lifetime /
-  yearly keys), payment gateway lands next.
-- **Phase 3 — Mobile** (iOS / iPadOS / Android, matching the family's
-  full-platform scope; a watchOS top-stories companion trails the phone
-  app): the same TypeScript core, phone and tablet apps, Pro licenses
-  carry over.
+All client features remain free with your own model key; your provider charges and limits apply. Hosted translation/digests are a planned capped subscription, not on sale. No lifetime hosting, device trials, mobile or sync entitlement is included in the launch design. See [PRICING.md](PRICING.md) for target prices, exact account quotas, length limits and cost gates. Current desktop/native transport work remains the next delivery priority; mobile is not a prerequisite.
 
 ## Tech stack
 
@@ -141,8 +112,7 @@ hackdigest/
 ## License & business model
 
 AGPL-3.0 — the client is open source, forever. Hosted translation, digest
-compute, and cross-device sync are the Pro subscription that keeps the
-lights on. Competitors are welcome to read the code; users are welcome to
+compute are the planned hosted subscription. Sync is not included in the launch offer. Competitors are welcome to read the code; users are welcome to
 self-host their own keys.
 
 ## Delivery priorities (2026-10-23)
@@ -152,3 +122,7 @@ The current product review issue linked from AGENTS owns the next bounded slice 
 ## Feedback and diagnostics
 
 Report reproducible bugs and feature requests through [GitHub Issues](https://github.com/turinglambdaai/hackdigest/issues). Include the release, OS/architecture and steps; inspect and redact diagnostics before sharing. Do not post API keys, license files, vault contents or private documents. For sensitive security reports, follow SECURITY.md when present; otherwise request a private contact route without disclosing sensitive details. Nothing is uploaded automatically.
+
+## Product & pricing
+
+免费 BYOK + 限额托管订阅. Launch design, not a live offer: see [PRICING.md](PRICING.md) for prices, boundaries and release gates. Current development builds do not gain payment restrictions from this documentation change.
