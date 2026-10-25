@@ -1,7 +1,6 @@
 // BYOK provider presets. Every endpoint speaks the OpenAI-compatible protocol.
 
 import type { LLMConfig } from './llm';
-import { HOSTED_BASE_URL } from './hosted';
 
 export interface ProviderPreset {
   id: string;
@@ -14,14 +13,6 @@ export interface ProviderPreset {
 }
 
 export const PROVIDERS: ProviderPreset[] = [
-  {
-    id: 'hosted',
-    label: 'HackDigest Pro（托管）',
-    baseUrl: HOSTED_BASE_URL,
-    defaultModel: 'hosted',
-    models: [],
-    note: '免配置：翻译与摘要走官方托管服务，用 License Key 或免费试用激活',
-  },
   {
     id: 'glm-coding',
     label: '智谱 GLM Coding Plan',

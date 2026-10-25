@@ -2,7 +2,6 @@ export * from './hn';
 export * from './algolia';
 export * from './llm';
 export * from './providers';
-export * from './hosted';
 export * from './dataFile';
 export * from './storage';
 export * from './translate';
