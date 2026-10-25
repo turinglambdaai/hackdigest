@@ -82,7 +82,7 @@ jobs:
           distribution: full
 
       - name: Install glaze
-        run: raco pkg install --auto --no-docs --skip-installed git+https://github.com/turinglambdaai/glaze.git#v0.16.0
+        run: raco pkg install --auto --no-docs --skip-installed git+https://github.com/turinglambdaai/glaze.git#aab28f2fdf4446df524a26a46cbf8ba1ae38447d
 
       # the updater verifies manifests through the crypto package (libcrypto
       # FFI bundled with the Racket distribution)
@@ -111,11 +111,38 @@ jobs:
             --sign - \
             --out dist
 
-      - name: Launch smoke (packaged binary serves API and frontend)
+      # Two-phase smoke over the packaged artifact. Phase 1 is the
+      # production shape: HACKDIGEST_SELFTEST drives the packaged binary in
+      # its native transport (glaze:// page, GLZ1 handler) and the app
+      # asserts its own page render + capture, then exits — non-zero on
+      # any failure, no browser fallback. Phase 2 keeps the HTTP adapter
+      # (explicit dev transport) honest: the same packaged engine must
+      # serve api/health and the frontend over loopback.
+      - name: Native launch selftest (packaged binary, production transport)
         run: |
           set -euo pipefail
           data_dir="$(mktemp -d)"
-          HACKDIGEST_DATA_DIR="$data_dir" GLAZE_API_TOKEN=smoke-token \
+          HACKDIGEST_SELFTEST=1 HACKDIGEST_DATA_DIR="$data_dir" \
+            ./dist/HackDigest.app/Contents/MacOS/HackDigest &
+          app_pid=$!
+          trap 'kill -9 $app_pid 2>/dev/null || true' exit
+          deadline=$((SECONDS + 120))
+          while kill -0 "$app_pid" 2>/dev/null && [ "$SECONDS" -lt "$deadline" ]; do
+            sleep 2
+          done
+          if kill -0 "$app_pid" 2>/dev/null; then
+            echo "::error::native selftest did not terminate in 120s"
+            exit 1
+          fi
+          status=0
+          wait "$app_pid" || status=$?
+          [ "$status" -eq 0 ] || { echo "::error::native selftest failed (exit $status)"; exit 1; }
+
+      - name: HTTP adapter smoke (packaged binary serves API and frontend)
+        run: |
+          set -euo pipefail
+          data_dir="$(mktemp -d)"
+          HACKDIGEST_TRANSPORT=http HACKDIGEST_DATA_DIR="$data_dir" GLAZE_API_TOKEN=smoke-token \
             ./dist/HackDigest.app/Contents/MacOS/HackDigest &
           app_pid=$!
           trap 'kill -9 $app_pid 2>/dev/null || true' exit
@@ -240,7 +267,7 @@ jobs:
           distribution: full
 
       - name: Install glaze
-        run: raco pkg install --auto --no-docs --skip-installed git+https://github.com/turinglambdaai/glaze.git#v0.16.0
+        run: raco pkg install --auto --no-docs --skip-installed git+https://github.com/turinglambdaai/glaze.git#aab28f2fdf4446df524a26a46cbf8ba1ae38447d
 
       # the updater verifies manifests through the crypto package (libcrypto
       # FFI bundled with the Racket distribution)
@@ -257,23 +284,43 @@ jobs:
           test -x dist/bin/HackDigest || { echo "::error::dist/bin/HackDigest executable missing"; exit 1; }
           test -d dist/lib || { echo "::error::dist/lib missing"; exit 1; }
 
-      # Launch smoke, glaze-CI style: the packaged app must come up under
-      # xvfb (WEBKIT_DISABLE_DMABUF_RENDERER avoids the GPU-dependent
-      # renderer on the runner) and serve API health + frontend. The
-      # launcher lands in dist/bin while public/ sits in dist/, so start
-      # it with dist/ as the working directory. The packaged launcher
-      # execs into the Racket engine (argv[0] becomes racketcs-<ver>), so
-      # PID/name-based detection is unreliable: run the app in its own
-      # process group via setsid and probe every listening TCP port with
-      # the token-protected health endpoint — only our server can answer
-      # it, so the health check itself decides which port is the app
-      # (same policy as the Windows smoke).
-      - name: Launch smoke (packaged binary serves API and frontend)
+      # Two-phase smoke (see the macOS job for the rationale). Both phases
+      # need a real display: xvfb hosts the WebKitGTK window, and
+      # WEBKIT_DISABLE_DMABUF_RENDERER avoids the GPU-dependent renderer
+      # on the runner. The launcher lands in dist/bin while public/ sits
+      # in dist/, so start it with dist/ as the working directory.
+      - name: Native launch selftest (packaged binary, production transport)
         run: |
           set -euo pipefail
           export WEBKIT_DISABLE_DMABUF_RENDERER=1
           data_dir="$(mktemp -d)"
-          export HACKDIGEST_DATA_DIR="$data_dir" GLAZE_API_TOKEN=smoke-token
+          cd dist
+          HACKDIGEST_SELFTEST=1 HACKDIGEST_DATA_DIR="$data_dir" \
+            setsid xvfb-run -a ./bin/HackDigest &
+          run_pid=$!
+          trap 'kill -9 -- "-$run_pid" 2>/dev/null || true' exit
+          deadline=$((SECONDS + 120))
+          while kill -0 "$run_pid" 2>/dev/null && [ "$SECONDS" -lt "$deadline" ]; do
+            sleep 2
+          done
+          if kill -0 "$run_pid" 2>/dev/null; then
+            echo "::error::native selftest did not terminate in 120s"
+            exit 1
+          fi
+          status=0
+          wait "$run_pid" || status=$?
+          [ "$status" -eq 0 ] || { echo "::error::native selftest failed (exit $status)"; exit 1; }
+
+      # HTTP adapter (explicit dev transport): probe every listening TCP
+      # port with the token-protected health endpoint — only our server
+      # can answer it, so the health check itself decides which port is
+      # the app (same policy as the Windows smoke).
+      - name: HTTP adapter smoke (packaged binary serves API and frontend)
+        run: |
+          set -euo pipefail
+          export WEBKIT_DISABLE_DMABUF_RENDERER=1
+          data_dir="$(mktemp -d)"
+          export HACKDIGEST_TRANSPORT=http HACKDIGEST_DATA_DIR="$data_dir" GLAZE_API_TOKEN=smoke-token
           cd dist
           setsid xvfb-run -a ./bin/HackDigest &
           run_pid=$!
@@ -565,31 +612,31 @@ jobs:
           ln -s hackdigest.png "$appdir/.DirIcon"
           ./"$asset" --no-appstream "$appdir" "hackdigest-$VERSION-linux-${{ matrix.arch }}.AppImage"
 
-      - name: AppImage smoke
+      # The AppImage carries the same payload the dist/ smoke just drove
+      # through both transports; its own smoke proves the AppRun wiring
+      # boots the app in the production native shape (self-terminating
+      # assertion, non-zero on any failure).
+      - name: AppImage native selftest
         run: |
           set -euo pipefail
           export WEBKIT_DISABLE_DMABUF_RENDERER=1 APPIMAGE_EXTRACT_AND_RUN=1
           data_dir="$(mktemp -d)"
-          export HACKDIGEST_DATA_DIR="$data_dir" GLAZE_API_TOKEN=smoke-token
+          export HACKDIGEST_SELFTEST=1 HACKDIGEST_DATA_DIR="$data_dir"
           app="hackdigest-$VERSION-linux-${{ matrix.arch }}.AppImage"
           setsid xvfb-run -a "./$app" &
           run_pid=$!
           trap 'kill -9 -- "-$run_pid" 2>/dev/null || true' exit
-          health_port=""
-          for _ in $(seq 1 15); do
+          deadline=$((SECONDS + 120))
+          while kill -0 "$run_pid" 2>/dev/null && [ "$SECONDS" -lt "$deadline" ]; do
             sleep 2
-            kill -0 "$run_pid" 2>/dev/null || { echo "::error::AppImage exited early"; exit 1; }
-            for p in $(lsof -iTCP -sTCP:LISTEN -P -n 2>/dev/null | grep -oE ':[0-9]+' | tr -d ':' | sort -u || true); do
-              if curl -fsS -m 5 -H "X-Glaze-Token: smoke-token" "http://127.0.0.1:$p/api/health" 2>/dev/null | grep -q '"ok":true'; then
-                health_port="$p"
-                break
-              fi
-            done
-            [ -n "$health_port" ] && break
           done
-          [ -n "$health_port" ] || { echo "::error::AppImage never answered api/health"; exit 1; }
-          code="$(curl -s -o /dev/null -w '%{http_code}' -m 5 "http://127.0.0.1:$health_port/")"
-          [ "$code" = "200" ] || { echo "::error::frontend returned $code"; exit 1; }
+          if kill -0 "$run_pid" 2>/dev/null; then
+            echo "::error::AppImage selftest did not terminate in 120s"
+            exit 1
+          fi
+          status=0
+          wait "$run_pid" || status=$?
+          [ "$status" -eq 0 ] || { echo "::error::AppImage selftest failed (exit $status)"; exit 1; }
 
       # Portable zip: same self-contained tree the tar.gz carries.
       - name: Portable zip (self-contained folder at the archive root)
@@ -661,7 +708,7 @@ jobs:
           distribution: full
 
       - name: Install glaze
-        run: raco pkg install --auto --no-docs --skip-installed git+https://github.com/turinglambdaai/glaze.git#v0.16.0
+        run: raco pkg install --auto --no-docs --skip-installed git+https://github.com/turinglambdaai/glaze.git#aab28f2fdf4446df524a26a46cbf8ba1ae38447d
 
       # the updater verifies manifests through the crypto package (libcrypto
       # FFI bundled with the Racket distribution)
@@ -724,13 +771,38 @@ jobs:
           $p = Start-Process -FilePath "$env:RUNNER_TEMP\webview2-bootstrapper.exe" -Wait -PassThru -ArgumentList '/silent','/install'
           if ($p.ExitCode -ne 0) { throw "WebView2 bootstrapper exited $($p.ExitCode)" }
 
-      - name: Launch smoke (packaged binary serves API and frontend)
+      # Two-phase smoke (see the macOS job for the rationale). The
+      # packaged exe asserts its own native render via HACKDIGEST_SELFTEST,
+      # then the HTTP adapter is probed over loopback.
+      - name: Native launch selftest (packaged binary, production transport)
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $dataDir = Join-Path $env:RUNNER_TEMP 'hd-selftest-data'
+          New-Item -ItemType Directory -Path $dataDir -Force | Out-Null
+          $env:HACKDIGEST_DATA_DIR = $dataDir
+          $env:HACKDIGEST_SELFTEST = '1'
+          $proc = Start-Process -FilePath (Resolve-Path 'dist/HackDigest.exe').Path -PassThru `
+            -WorkingDirectory (Resolve-Path 'dist').Path
+          try {
+            if (-not $proc.WaitForExit(120000)) {
+              Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue
+              throw "native selftest did not terminate in 120s"
+            }
+            if ($proc.ExitCode -ne 0) { throw "native selftest failed (exit $($proc.ExitCode))" }
+            Write-Host "native selftest passed (window opened, page rendered, capture taken)"
+          } finally {
+            Remove-Item Env:HACKDIGEST_SELFTEST -ErrorAction SilentlyContinue
+          }
+
+      - name: HTTP adapter smoke (packaged binary serves API and frontend)
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
           $dataDir = Join-Path $env:RUNNER_TEMP 'hd-smoke-data'
           New-Item -ItemType Directory -Path $dataDir -Force | Out-Null
           $env:HACKDIGEST_DATA_DIR = $dataDir
+          $env:HACKDIGEST_TRANSPORT = 'http'
           $env:GLAZE_API_TOKEN = 'smoke-token'
           $outLog = Join-Path $env:RUNNER_TEMP 'hd-smoke-out.log'
           $errLog = Join-Path $env:RUNNER_TEMP 'hd-smoke-err.log'
@@ -739,7 +811,7 @@ jobs:
             -RedirectStandardOutput $outLog -RedirectStandardError $errLog
           try {
             # The app process can hold several listening sockets (single-
-            # instance guard, internal services), and which one comes first
+            # instance guard, HTTP server), and which one comes first
             # is not stable — probe every port and let the health endpoint
             # decide which one is the HTTP server.
             $health = $null
@@ -765,6 +837,7 @@ jobs:
             $front = Invoke-WebRequest -UseBasicParsing -NoProxy -Uri "http://127.0.0.1:$port/" -TimeoutSec 20
             if ($front.StatusCode -ne 200) { throw "frontend returned $($front.StatusCode)" }
           } finally {
+            Remove-Item Env:HACKDIGEST_TRANSPORT -ErrorAction SilentlyContinue
             if (-not $proc.HasExited) { Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue }
             if ($proc.HasExited -and $proc.ExitCode -ne 0) {
               Write-Host "::group::smoke stdout"
@@ -831,7 +904,7 @@ jobs:
 
       - name: Install glaze and crypto
         run: |
-          raco pkg install --auto --no-docs --skip-installed git+https://github.com/turinglambdaai/glaze.git#v0.16.0 crypto
+          raco pkg install --auto --no-docs --skip-installed git+https://github.com/turinglambdaai/glaze.git#aab28f2fdf4446df524a26a46cbf8ba1ae38447d crypto
 
       - uses: actions/download-artifact@v4
         with:

@@ -10,6 +10,11 @@ releases and tags were withdrawn.
 ### Added
 
 - Commit the real backend Glaze schema baseline and project manifest, with a CI compatibility check that imports the API without opening a window or database. Document the current delivery priorities and bounded hosted-usage policy.
+- `HACKDIGEST_SELFTEST=1` self-terminating launch assertion: the packaged app must open its WebView, render the served page from the controlled origin, and composite pixels (title poll + capture) before exiting 0; any failure or timeout exits non-zero with no browser fallback. Release CI runs it on every platform against the packaged artifact (app bundle, dist tree, MSI exe, AppImage), then re-probes the HTTP adapter (`HACKDIGEST_TRANSPORT=http`) over loopback.
+
+### Changed
+
+- Native transport is the default on all three platforms — the packaged-native switch of the Glaze 1.0-plan G4 cycle closes the consumer transport gap (#2). `HACKDIGEST_TRANSPORT=http` remains the explicit development adapter; `GLAZE_API_TOKEN` applies to that adapter only. CI and release installs now pin Glaze at the main head that carries the G4 native-host conformance matrix (flip to the next tagged release when it exists).
 
 
 ## 0.3.1 - 2026-10-14

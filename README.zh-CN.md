@@ -16,7 +16,7 @@ Hacker News 大概是互联网上最好的技术首页 —— 但对数以百万
 
 ## 下载
 
-到 [GitHub Releases](https://github.com/turinglambdaai/hackdigest/releases/latest) 取最新版本 —— 所有产物由 GitHub CI 从源码构建，并在三平台上通过启动冒烟验证：
+到 [GitHub Releases](https://github.com/turinglambdaai/hackdigest/releases/latest) 取最新版本 —— 所有产物由 GitHub CI 从源码构建，并在三平台上通过打包原生自检（生产 transport）与 HTTP 适配器冒烟验证：
 
 | 平台 | 产物 |
 |---|---|
@@ -51,7 +51,7 @@ HN 老用户的肌肉记忆全部保留：**j/k** 上下移动选中，**Enter/o
 **Glaze（Racket 后端）+ React + TypeScript**，单仓库，`backend/` + `apps/desktop/` + `packages/core`（HackDigest 是内容型应用：文章页、富文本评论树、排版，而内容渲染，web 引擎就是最好的文本引擎；应用壳、存储、LLM 代理与更新检查住在 [Glaze](https://github.com/turinglambdaai/glaze) 驱动的 Racket 后端里）。
 
 - `packages/core` —— 纯 TypeScript，全端复用：HN API 客户端（官方 Firebase API + Algolia 搜索）、任意 OpenAI 兼容端点的 BYOK 预置（GLM、DeepSeek、通义、Kimi、OpenAI、Claude……，国内用户可直连国产 API），以及组件依赖的存储/设置层。
-- 前端 —— React + Vite + zustand + Tailwind 4，渐进加载的评论树与信息流，深浅色；应用内经 HTTP 与后端通信，纯浏览器 dev 保留 IndexedDB 兜底。
+- 前端 —— React + Vite + zustand + Tailwind 4，渐进加载的评论树与信息流，深浅色；应用内经原生 GLZ1 消息通道与后端通信（不走 TCP 端口），`HACKDIGEST_TRANSPORT=http` 保留为显式开发适配器，纯浏览器 dev 保留 IndexedDB 兜底。
 - 后端 —— Racket：SQLite 存储（kv、翻译缓存、HN 条目缓存 —— 同一帖子的翻译绝不重复翻译）+ settings/library JSON 文件。翻译/Digest 管线（提示词构建、30 条标题批、评论自愈二分）在这里跑，BYOK 的 API Key 只存在后端、页面碰不到；LLM 调用经后端代理流式返回，带重试与 60 秒超时。
 - 网络 —— HN 数据直接来自官方 [Hacker News API](https://github.com/HackerNews/API) 与 Algolia 搜索 API —— 不爬虫。
 - 更新 —— 后端启动时拉取 Ed25519 签名更新清单，按签名清单校验产物，macOS 与 Windows 的便携安装原地换装；Linux 安装呈现下载好的归档，安装器安装（DMG / MSI）则引导前往发布页。

@@ -38,8 +38,11 @@ jobs:
         with:
           version: stable
 
+      # Pinned to the glaze main head carrying the G4 native-host
+      # conformance matrix (green on all three OSes); flip to the next
+      # tagged release (v0.18.0) once it exists.
       - name: Install glaze
-        run: raco pkg install --auto --no-docs --skip-installed git+https://github.com/turinglambdaai/glaze.git#v0.16.0
+        run: raco pkg install --auto --no-docs --skip-installed git+https://github.com/turinglambdaai/glaze.git#aab28f2fdf4446df524a26a46cbf8ba1ae38447d
 
       # the updater verifies manifests through the crypto package (libcrypto
       # FFI bundled with the Racket distribution)
