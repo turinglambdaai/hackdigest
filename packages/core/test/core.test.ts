@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { sanitizeHtml } from '../src/sanitize';
 import { extractJson, langName } from '../src/translate';
 import { miniMarkdown, timeAgo, domainOf } from '../src/util';
+import { mergeStoredSettings } from '../src/settings';
 
 describe('extractJson (LLM output tolerance)', () => {
   it('parses bare JSON', () => {
@@ -79,5 +80,40 @@ describe('langName', () => {
   it('maps known codes', () => {
     expect(langName('zh')).toContain('Chinese');
     expect(langName('xx')).toBe('xx');
+  });
+});
+
+describe('mergeStoredSettings (legacy hosted-provider data compatibility)', () => {
+  const legacyHosted = {
+    providerId: 'hosted',
+    llm: { baseUrl: 'https://hd.jrtx.site/v1', apiKey: 'hd_pro_abc', model: 'hosted' },
+    hostedStatus: { plan: 'pro', expiresAt: 1, used: 2, limit: 3 },
+  } as never;
+
+  it('remaps the removed hosted preset to a working custom endpoint', () => {
+    const s = mergeStoredSettings(legacyHosted);
+    expect(s.providerId).toBe('custom');
+    expect(s.llm).toEqual({ baseUrl: 'https://hd.jrtx.site/v1', apiKey: 'hd_pro_abc', model: 'hosted' });
+    expect((s as Record<string, unknown>).hostedStatus).toBeUndefined();
+  });
+
+  it('leaves regular stored settings untouched', () => {
+    const s = mergeStoredSettings({
+      uiLang: 'en',
+      providerId: 'glm',
+      llm: { baseUrl: 'https://open.bigmodel.cn/api/paas/v4', apiKey: '__SAVED__', model: 'glm-4.6' },
+      shortcuts: { listNext: 'J' },
+    } as never);
+    expect(s.providerId).toBe('glm');
+    expect(s.llm?.apiKey).toBe('__SAVED__');
+    expect(s.uiLang).toBe('en');
+    expect(s.shortcuts.listNext).toBe('J');
+    expect(s.shortcuts.listPrev).toBe('k'); // default fills the rest
+  });
+
+  it('returns defaults for empty input', () => {
+    const s = mergeStoredSettings(null);
+    expect(s.providerId).toBe('');
+    expect(s.autoTranslateTitles).toBe(true);
   });
 });

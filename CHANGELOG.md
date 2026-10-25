@@ -14,6 +14,7 @@ releases and tags were withdrawn.
 
 ### Changed
 
+- Remove the superseded hosted config surface (issue #2 free-product gate check): the "HackDigest Pro（托管）" provider preset, license-key activation, device-bound 7-day trial, and the trial/lifetime/pro quota panel are gone while hosted remains not on sale, per the `2026-10-v2` pricing decision and the `2026-10-auth-1` authorization decision (account-bound entitlements, no desktop activation lease, no per-device trials). Legacy settings with `providerId: "hosted"` remap on load to a working custom endpoint (same base URL / key / model; cached `hostedStatus` dropped), and the auto-translate toggles that were stranded inside the hosted-only settings branch are now visible for every provider. `raco` backend untouched: the settings mask exception for legacy hosted keys stays until secure-storage migration.
 - Native transport is the default on all three platforms — the packaged-native switch of the Glaze 1.0-plan G4 cycle closes the consumer transport gap (#2). `HACKDIGEST_TRANSPORT=http` remains the explicit development adapter; `GLAZE_API_TOKEN` applies to that adapter only. CI and release installs now pin Glaze at the main head that carries the G4 native-host conformance matrix (flip to the next tagged release when it exists).
 
 
