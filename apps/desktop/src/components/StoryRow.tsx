@@ -44,7 +44,8 @@ export default function StoryRow({ item, rank, idx, selected, read, bookmarked, 
   return (
     <div
       data-rank={idx}
-      className={`group cursor-pointer border-b border-line/60 px-5 py-3 transition-colors hover:bg-raised/60 ${selected ? 'bg-accentsoft/60 shadow-[inset_3px_0_0_0_var(--accent)]' : ''}`}
+      tabIndex={selected ? -1 : undefined}
+      className={`group cursor-pointer border-b border-line/60 px-5 py-3 transition-colors hover:bg-raised/60 focus-visible:outline-none focus-visible:bg-accentsoft/60 ${selected ? 'bg-accentsoft/60 shadow-[inset_3px_0_0_0_var(--accent)]' : ''}`}
       onClick={() => navigate({ type: 'story', id: item.id })}
     >
       <div className="flex items-start gap-3">

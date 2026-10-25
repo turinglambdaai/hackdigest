@@ -36,12 +36,14 @@ interface NodeProps {
   children: HNItem[] | undefined;
   tree: Map<number, HNItem[]>;
   kidsLoaded: boolean;
+  /** Parents whose expansion fetch failed — the expand button becomes an explicit retry. */
+  kidFailedIds?: Set<number>;
   onExpandKids: (item: HNItem) => void;
   autoActive?: boolean;
   onAutoVisible?: (item: HNItem) => void;
 }
 
-export function CommentNode({ item, children, tree, kidsLoaded, onExpandKids, autoActive, onAutoVisible }: NodeProps) {
+export function CommentNode({ item, children, tree, kidsLoaded, kidFailedIds, onExpandKids, autoActive, onAutoVisible }: NodeProps) {
   const { t, lang } = useI18n();
   const llm = useSettings((s) => s.settings.llm);
   const target = useSettings((s) => s.settings.translateTarget);
@@ -139,6 +141,7 @@ export function CommentNode({ item, children, tree, kidsLoaded, onExpandKids, au
                   children={tree.get(c.id)}
                   tree={tree}
                   kidsLoaded={tree.has(c.id) || !c.kids?.length}
+                  kidFailedIds={kidFailedIds}
                   onExpandKids={onExpandKids}
                   autoActive={autoActive}
                   onAutoVisible={onAutoVisible}
@@ -148,7 +151,11 @@ export function CommentNode({ item, children, tree, kidsLoaded, onExpandKids, au
           )}
           {loadingKids && (
             <button
-              className="mt-2 ml-1 flex items-center gap-1.5 rounded-md border border-line bg-raised px-2.5 py-1 text-[11px] text-mute hover:border-accent hover:text-accent"
+              className={`mt-2 ml-1 flex items-center gap-1.5 rounded-md border bg-raised px-2.5 py-1 text-[11px] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent ${
+                kidFailedIds?.has(item.id)
+                  ? 'border-accent/50 text-accent'
+                  : 'border-line text-mute hover:border-accent hover:text-accent'
+              }`}
               disabled={expanding}
               onClick={() => {
                 setExpanding(true);
@@ -160,7 +167,9 @@ export function CommentNode({ item, children, tree, kidsLoaded, onExpandKids, au
               ) : (
                 <IconChevronDown className="rotate-[-90deg]" width={11} height={11} />
               )}
-              {t.expandReplies.replace('{n}', String(replyCount))}
+              {kidFailedIds?.has(item.id)
+                ? `${t.loadFail} — ${t.retry}`
+                : t.expandReplies.replace('{n}', String(replyCount))}
             </button>
           )}
         </>

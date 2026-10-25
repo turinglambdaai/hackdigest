@@ -34,52 +34,102 @@ export default function StoryDetail({ id }: { id: number }) {
   const put = useTrans((s) => s.put);
 
   const [story, setStory] = useState<HNItem | null>(null);
+  // Finite, named load states: the story either loads, fails (network), or
+  // is missing/deleted — never an eternal spinner.
+  const [loadState, setLoadState] = useState<'loading' | 'error' | 'missing'>('loading');
+  const [reloadTick, setReloadTick] = useState(0);
   const [comments, setComments] = useState<HNItem[]>([]);
   const [loadedParents, setLoadedParents] = useState<Set<number>>(new Set());
+  const [failedParents, setFailedParents] = useState<Set<number>>(new Set());
   const [commentsLoading, setCommentsLoading] = useState(false);
   const [translatingStory, setTranslatingStory] = useState(false);
   const [digest, setDigest] = useState<string | null>(null);
   const [digesting, setDigesting] = useState(false);
   const [bookmarked, setBookmarked] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
+  // Generation counter: any fetch result that lands after the story changed
+  // is discarded, so replies from one story can never mix into another.
+  const loadGen = useRef(0);
 
   useEffect(() => {
     let alive = true;
+    const gen = ++loadGen.current;
+    setLoadState('loading');
     setStory(null);
     setComments([]);
     setLoadedParents(new Set());
+    setFailedParents(new Set());
     setDigest(null);
     setTranslatingStory(false);
     void isBookmarked(id).then((b) => alive && setBookmarked(b));
     void markRead(id);
     void fetchItem(id)
       .then(async (s) => {
-        if (!alive || !s) return;
+        if (!alive || gen !== loadGen.current) return;
+        if (!s) {
+          setLoadState('missing');
+          return;
+        }
         setStory(s);
+        setLoadState('loading');
         const cached = await getCachedTranslation(id, target);
-        if (cached) put(id, cached);
+        if (alive && gen === loadGen.current && cached) put(id, cached);
       })
-      .catch(() => {});
+      .catch(() => {
+        if (alive && gen === loadGen.current) setLoadState('error');
+      });
     return () => {
       alive = false;
       abortRef.current?.abort();
     };
+  }, [id, reloadTick, put]);
+
+  // Translate-target changes only re-resolve the cached translation; the
+  // story itself and the comment tree stay put.
+  useEffect(() => {
+    let alive = true;
+    void getCachedTranslation(id, target).then((cached) => {
+      if (alive && cached) put(id, cached);
+    });
+    return () => {
+      alive = false;
+    };
   }, [id, target, put]);
 
   // Lazy comments: only the top level loads with the story; each subtree is
-  // fetched on demand ("Expand N replies") instead of pulling 1000 items up front.
+  // fetched on demand ("Expand N replies") instead of pulling 1000 items up
+  // front. A parent counts as loaded only after a successful fetch — a
+  // failed expansion stays failed (retryable), never "loaded".
   const loadKids = useCallback(async (parentId: number, kids: number[]) => {
-    setLoadedParents((prev) => {
-      if (prev.has(parentId)) return prev;
+    const gen = loadGen.current;
+    setFailedParents((prev) => {
+      if (!prev.has(parentId)) return prev;
       const next = new Set(prev);
-      next.add(parentId);
+      next.delete(parentId);
       return next;
     });
-    const got = await fetchItems(kids);
-    setComments((prev) => {
-      const seen = new Set(prev.map((c) => c.id));
-      return [...prev, ...got.filter((x): x is HNItem => x != null && !x.dead && !x.deleted && !seen.has(x.id))];
-    });
+    try {
+      const got = await fetchItems(kids);
+      if (gen !== loadGen.current) return; // story switched mid-fetch: discard
+      setComments((prev) => {
+        const seen = new Set(prev.map((c) => c.id));
+        return [...prev, ...got.filter((x): x is HNItem => x != null && !x.dead && !x.deleted && !seen.has(x.id))];
+      });
+      setLoadedParents((prev) => {
+        if (prev.has(parentId)) return prev;
+        const next = new Set(prev);
+        next.add(parentId);
+        return next;
+      });
+    } catch {
+      if (gen !== loadGen.current) return;
+      setFailedParents((prev) => {
+        if (prev.has(parentId)) return prev;
+        const next = new Set(prev);
+        next.add(parentId);
+        return next;
+      });
+    }
   }, []);
 
   useEffect(() => {
@@ -249,10 +299,40 @@ export default function StoryDetail({ id }: { id: number }) {
     }
   };
 
-  if (!story)
+  if (!story) {
+    // Finite named states: network failure (retryable) vs missing/deleted.
+    // Reuses the feed list's error language; Back stays keyboard reachable
+    // (focused on entry) in every state.
+    const retry = () => setReloadTick((x) => x + 1);
     return (
-      <div className="flex h-full items-center justify-center text-mute">{t.loading}</div>
+      <div className="mx-auto max-w-3xl">
+        <div className="sticky top-0 z-10 border-b border-line bg-bg/85 px-5 py-2.5 backdrop-blur">
+          <button
+            autoFocus
+            className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-mute hover:bg-raised hover:text-ink"
+            onClick={back}
+          >
+            <IconChevronLeft width={13} height={13} />
+            {t.back}
+          </button>
+        </div>
+        <div className="p-8 text-center text-mute">
+          {loadState === 'missing' ? (
+            t.storyMissing
+          ) : loadState === 'error' ? (
+            <>
+              {t.loadFail}
+              <button className="ml-3 text-accent underline" onClick={retry}>
+                {t.retry}
+              </button>
+            </>
+          ) : (
+            t.loading
+          )}
+        </div>
+      </div>
     );
+  }
 
   const domain = domainOf(story.url);
   const titleZh = trans?.title && trans.title !== story.title;
@@ -379,9 +459,26 @@ export default function StoryDetail({ id }: { id: number }) {
             </div>
           )}
           {comments.length === 0 ? (
-            <div className="py-6 text-center text-sm text-mute">
-              {story.kids?.length ? t.loading : t.noResults}
-            </div>
+            failedParents.has(story.id) && story.kids?.length ? (
+              // Top-level comment fetch failed: named error + retry, same
+              // language as the feed list.
+              <div className="py-6 text-center text-sm text-mute">
+                {t.loadFail}
+                <button
+                  className="ml-3 text-accent underline"
+                  onClick={() => {
+                    setCommentsLoading(true);
+                    void loadKids(story.id, story.kids!).finally(() => setCommentsLoading(false));
+                  }}
+                >
+                  {t.retry}
+                </button>
+              </div>
+            ) : (
+              <div className="py-6 text-center text-sm text-mute">
+                {story.kids?.length ? t.loading : t.noResults}
+              </div>
+            )
           ) : (
             <div className="space-y-3 pb-10">
               {roots.map((c) => (
@@ -391,6 +488,7 @@ export default function StoryDetail({ id }: { id: number }) {
                   children={tree.get(c.id)}
                   tree={tree}
                   kidsLoaded={loadedParents.has(c.id)}
+                  kidFailedIds={failedParents}
                   onExpandKids={expandKids}
                   autoActive={autoMode}
                   onAutoVisible={enqueueVisible}

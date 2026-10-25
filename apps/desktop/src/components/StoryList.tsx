@@ -1,6 +1,6 @@
 // Feed page: ranked list with progressive item loading + infinite scroll.
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { fetchFeedIds, fetchItems, type FeedId, type HNItem } from '@hackdigest/core';
 import { useI18n } from '../i18n';
 import { useUI } from '../state/store';
@@ -14,7 +14,7 @@ import { IconRefresh } from './icons';
 
 const PAGE = 30;
 
-export default function StoryList({ feed }: { feed: FeedId }) {
+export default function StoryList({ feed, active = true }: { feed: FeedId; active?: boolean }) {
   const { t } = useI18n();
   const [ids, setIds] = useState<number[] | null>(null);
   const [error, setError] = useState<Error | null>(null);
@@ -76,7 +76,9 @@ export default function StoryList({ feed }: { feed: FeedId }) {
   // HN-style keyboard navigation: j/k move, Enter/o open, s star, t translate, r refresh.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (isTypingTarget(e) || e.metaKey || e.ctrlKey || e.altKey) return;
+      // The list stays mounted (hidden) while a story detail is open; the
+      // visible view owns the keyboard.
+      if (!active || isTypingTarget(e) || e.metaKey || e.ctrlKey || e.altKey) return;
       const k = e.key;
       if (k === sc.listNext || e.key === 'ArrowDown') {
         setSel((i) => Math.min(i + 1, items.length - 1));
@@ -102,12 +104,28 @@ export default function StoryList({ feed }: { feed: FeedId }) {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [items, sel, llm, target, put, navigate, sc]);
+  }, [active, items, sel, llm, target, put, navigate, sc]);
 
   const sentinel = useSentinel(
     () => setVisible((v) => (ids && v < ids.length ? v + PAGE : v)),
     !!ids && visible < (ids?.length ?? 0)
   );
+
+  // Keyboard continuity across detail/back: when the list becomes visible
+  // again, put focus on the selected row (rows are programmatic targets,
+  // not tab stops — j/k/Enter remain the list's keyboard interface).
+  const wasActive = useRef(!active);
+  useEffect(() => {
+    if (active && !wasActive.current) {
+      wasActive.current = true;
+      requestAnimationFrame(() => {
+        const row = document.querySelector<HTMLElement>('[data-rank="' + sel + '"]');
+        row?.focus();
+      });
+    } else if (!active) {
+      wasActive.current = false;
+    }
+  }, [active, sel]);
 
   const rankBase = useMemo(() => 1, []);
 

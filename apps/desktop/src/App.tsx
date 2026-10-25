@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import type { FeedId } from '@hackdigest/core';
 import { useSettings, useUI, applyChrome } from './state/store';
 import Sidebar from './components/Sidebar';
 import StoryList from './components/StoryList';
@@ -23,6 +24,18 @@ export default function App() {
   const update = useStartupUpdateCheck();
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
+  // Keep the feed list mounted (hidden) while a story detail is open on top
+  // of it, so feed selection and scroll survive Back exactly as they were.
+  const lastFeed = useRef<FeedId>('top');
+  const feedEverMounted = useRef(false);
+  const viewIsFeed = view.type === 'feed';
+  useEffect(() => {
+    if (viewIsFeed) {
+      lastFeed.current = view.feed;
+      feedEverMounted.current = true;
+    }
+  }, [viewIsFeed, view]);
+  const feedMounted = feedEverMounted.current;
 
   // Global keys: 1-6 switch feeds, / focuses search, ? shows the cheat sheet.
   useEffect(() => {
@@ -67,13 +80,42 @@ export default function App() {
       {update && !bannerDismissed && <UpdateBanner update={update} onClose={() => setBannerDismissed(true)} />}
       <div className="flex min-h-0 flex-1">
         <Sidebar />
-        <main className="h-full flex-1 overflow-y-auto">
-          {view.type === 'feed' && <StoryList key={view.feed} feed={view.feed} />}
-          {view.type === 'story' && <StoryDetail key={view.id} id={view.id} />}
-          {view.type === 'search' && <SearchPage key={view.query} query={view.query} />}
-          {view.type === 'bookmarks' && <BookmarksPage />}
-          {view.type === 'daily' && <DailyDigest />}
-          {view.type === 'settings' && <SettingsPage />}
+        <main className="h-full flex-1 overflow-hidden">
+          <div className="relative h-full">
+            {feedMounted && (
+              <div
+                className={`absolute inset-0 overflow-y-auto ${viewIsFeed ? '' : 'invisible'}`}
+                aria-hidden={!viewIsFeed}
+              >
+                <StoryList key={lastFeed.current} feed={lastFeed.current} active={viewIsFeed} />
+              </div>
+            )}
+            {view.type === 'story' && (
+              <div className="absolute inset-0 overflow-y-auto">
+                <StoryDetail key={view.id} id={view.id} />
+              </div>
+            )}
+            {view.type === 'search' && (
+              <div className="absolute inset-0 overflow-y-auto">
+                <SearchPage key={view.query} query={view.query} />
+              </div>
+            )}
+            {view.type === 'bookmarks' && (
+              <div className="absolute inset-0 overflow-y-auto">
+                <BookmarksPage />
+              </div>
+            )}
+            {view.type === 'daily' && (
+              <div className="absolute inset-0 overflow-y-auto">
+                <DailyDigest />
+              </div>
+            )}
+            {view.type === 'settings' && (
+              <div className="absolute inset-0 overflow-y-auto">
+                <SettingsPage />
+              </div>
+            )}
+          </div>
         </main>
       </div>
       {showShortcuts && <ShortcutsOverlay onClose={() => setShowShortcuts(false)} />}

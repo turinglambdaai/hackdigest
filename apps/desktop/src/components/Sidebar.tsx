@@ -23,8 +23,12 @@ export default function Sidebar() {
   const [query, setQuery] = useState('');
 
   const dark = settings.theme === 'dark';
+  // Native buttons: every destination is keyboard reachable (Tab) and
+  // operable with Enter/Space; focus-visible keeps the focus ring visible
+  // in both languages. aria-current marks the active destination for
+  // assistive tech instead of relying on the color change alone.
   const itemCls = (active: boolean) =>
-    `flex items-center gap-2.5 rounded-lg px-3 py-1.5 text-sm cursor-pointer transition-colors ${
+    `flex w-full items-center gap-2.5 rounded-lg px-3 py-1.5 text-sm text-left transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent ${
       active ? 'bg-accentsoft text-accent font-medium' : 'text-ink/75 hover:bg-raised'
     }`;
 
@@ -61,32 +65,53 @@ export default function Sidebar() {
           {t.feeds.top}
         </div>
         {FEEDS.map((f) => (
-          <div key={f} className={itemCls(view.type === 'feed' && view.feed === f)} onClick={() => navigate({ type: 'feed', feed: f })}>
+          <button
+            key={f}
+            type="button"
+            className={itemCls(view.type === 'feed' && view.feed === f)}
+            aria-current={view.type === 'feed' && view.feed === f ? 'page' : undefined}
+            onClick={() => navigate({ type: 'feed', feed: f })}
+          >
             <span className="w-3.5 text-center text-mute">{f === 'top' ? '▲' : f === 'new' ? '✦' : f === 'best' ? '★' : f === 'ask' ? '?' : f === 'show' ? '◆' : '▪'}</span>
             {t.feeds[f]}
-          </div>
+          </button>
         ))}
 
         <div className="mt-3 border-t border-line pt-2" />
-        <div className={itemCls(view.type === 'daily')} onClick={() => navigate({ type: 'daily' })}>
+        <button
+          type="button"
+          className={itemCls(view.type === 'daily')}
+          aria-current={view.type === 'daily' ? 'page' : undefined}
+          onClick={() => navigate({ type: 'daily' })}
+        >
           <IconNewspaper width={14} height={14} />
           {t.daily}
-        </div>
-        <div className={itemCls(view.type === 'bookmarks')} onClick={() => navigate({ type: 'bookmarks' })}>
+        </button>
+        <button
+          type="button"
+          className={itemCls(view.type === 'bookmarks')}
+          aria-current={view.type === 'bookmarks' ? 'page' : undefined}
+          onClick={() => navigate({ type: 'bookmarks' })}
+        >
           <IconStar width={14} height={14} />
           {t.bookmarks}
-        </div>
+        </button>
       </nav>
 
       <div className="space-y-0.5 border-t border-line px-3 py-2">
-        <div className={itemCls(false)} onClick={() => patch({ theme: dark ? 'light' : 'dark' })}>
+        <button type="button" className={itemCls(false)} onClick={() => patch({ theme: dark ? 'light' : 'dark' })}>
           {dark ? <IconSun width={14} height={14} /> : <IconMoon width={14} height={14} />}
           {dark ? t.themeLight : t.themeDark}
-        </div>
-        <div className={itemCls(view.type === 'settings')} onClick={() => navigate({ type: 'settings' })}>
+        </button>
+        <button
+          type="button"
+          className={itemCls(view.type === 'settings')}
+          aria-current={view.type === 'settings' ? 'page' : undefined}
+          onClick={() => navigate({ type: 'settings' })}
+        >
           <IconSettings width={14} height={14} />
           {t.settings}
-        </div>
+        </button>
         <div className="px-3 pt-1 text-[11px] text-mute/70">{t.footer}</div>
       </div>
     </aside>
