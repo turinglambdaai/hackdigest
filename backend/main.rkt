@@ -20,6 +20,7 @@
          (except-in glaze/path app-data-dir) ; public-dir; app-data-dir stays ours
          glaze/sys/main   ; single-instance?
          glaze/types      ; GString, GInt64, GValue, glist
+         glaze/window     ; webview? / title / url / capture / close for the selftest
          glaze/window-state ; window-state
          json
          racket/contract
@@ -395,14 +396,25 @@
 
   ;; Transport: native (the page loads from glaze:// and every call rides
   ;; the GLZ1 message handler — no TCP port) is the production shape on
-  ;; macOS; other platforms and explicit dev runs opt into HTTP with
+  ;; every platform — the packaged-native switch (0.4 RC, glaze 1.0 plan
+  ;; G4). HTTP/SSE stays available as the explicit development adapter via
   ;; HACKDIGEST_TRANSPORT=http. GLAZE_API_TOKEN pins a fixed token for
   ;; dev/test automation on the HTTP transport; the native transport has
   ;; no token because the message handler is the trust boundary.
   (define transport
     (or (let ([v (getenv "HACKDIGEST_TRANSPORT")])
           (and (member v '("native" "http")) (string->symbol v)))
-        (if (eq? (system-type 'os) 'macosx) 'native 'http)))
+        'native))
+
+  ;; HACKDIGEST_SELFTEST=1 turns launch into a self-terminating assertion
+  ;; for the packaged-native smoke (release CI on all three platforms):
+  ;; the production shape — launcher, engine, native WebView, page served
+  ;; from the controlled origin — must come up and render, then the
+  ;; process exits 0. A missing WebView backend, a page that never
+  ;; commits, or an empty capture exits non-zero; there is no browser
+  ;; fallback to mask a broken packaged bridge.
+  (define selftest? (equal? (getenv "HACKDIGEST_SELFTEST") "1"))
+  (define selftest-passed? (box #f))
   (run-app
    #:public-dir frontend-dist
    #:api api
@@ -413,6 +425,38 @@
    #:width 1160
    #:height 800
    #:app-id "hackdigest"
-   #:window-state #t))
+   #:window-state #t
+   #:on-ready
+   (if selftest?
+       (lambda (wv url)
+         (define deadline (+ (current-inexact-milliseconds) 20000))
+         (define loaded?
+           (if (webview? wv)
+               (let loop ()
+                 (cond
+                   [(equal? (webview-title wv) "HackDigest") #t]
+                   [(> (current-inexact-milliseconds) deadline) #f]
+                   [else (sleep 0.25) (loop)]))
+               #f))
+         ;; Capture proves composited pixels, not just a committed title;
+         ;; macOS can answer the title query before the first remote layer
+         ;; composites, so retry briefly (same policy as the framework's
+         ;; agent-verify example).
+         (define shot
+           (and loaded?
+                (let retry ([limit (+ (current-inexact-milliseconds) 5000)])
+                  (define s (webview-capture! wv))
+                  (cond
+                    [(and s (>= (file-size s) 5000)) s]
+                    [(> (current-inexact-milliseconds) limit) s]
+                    [else (sleep 0.3) (retry limit)]))))
+         (set-box! selftest-passed? (and loaded? shot))
+         (eprintf "[selftest] transport=~a url=~a loaded=~a capture=~a\n"
+                  transport url loaded? (and shot #t))
+         (when (webview? wv) (webview-close wv)))
+       (lambda (wv url) (void))))
+
+  (when selftest?
+    (exit (if (unbox selftest-passed?) 0 1))))
 
 (provide api bus)

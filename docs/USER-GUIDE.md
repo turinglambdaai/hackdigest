@@ -10,7 +10,7 @@ All client features are free with your own model key; provider charges apply. Ho
 
 ## Platforms and installation
 
-Desktop previews for macOS, Windows and Linux on Glaze. Native transport, packaged behavior and secret-storage parity still require release qualification.
+Desktop previews for macOS, Windows and Linux on Glaze. All three platforms run the native transport by default — HTTP is the explicit dev adapter (`HACKDIGEST_TRANSPORT=http`) — and release CI packaged-native selftests every platform. Secret-storage parity is still pending (#2).
 
 Use [official Releases](https://github.com/turinglambdaai/hackdigest/releases), select an explicitly listed OS/architecture asset, read its release notes and check supplied checksums. An absent asset/platform is not a delivery promise. Preview builds may lack publisher signing or notarization; do not disable system-wide security protections to install them.
 
@@ -30,7 +30,7 @@ Feeds/search contact HN and search services. Translation and summaries send requ
 
 ## Known limits
 
-Windows/Linux packaged native parity and secret storage remain tracked in #2. No mobile or hosted-sync service is included.
+Secret storage (system secure storage for model API keys) remains tracked in #2; settings can still contain the key until that migration lands. No mobile or hosted-sync service is included.
 
 ## Updates and removal
 

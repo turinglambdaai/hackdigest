@@ -10,7 +10,7 @@
 
 ## 平台与安装
 
-基于 Glaze 的 macOS、Windows、Linux 桌面预览。原生传输、打包行为和密钥存储一致性仍需发行验收。
+基于 Glaze 的 macOS、Windows、Linux 桌面预览。三平台默认原生 transport——HTTP 保留为显式开发适配器（`HACKDIGEST_TRANSPORT=http`）——发行 CI 对每个平台执行打包原生自检。密钥存储一致性仍在跟进（#2）。
 
 从[官方 Releases](https://github.com/turinglambdaai/hackdigest/releases)选择明确标注系统和架构的附件，阅读该版本说明并核对附带校验文件。未列出的附件或平台不视为已交付。预览构建可能没有系统发行者签名或公证；不要为安装而关闭系统安全保护。
 
@@ -30,7 +30,7 @@
 
 ## 已知限制
 
-Windows/Linux 打包原生一致性和密钥存储仍在 #2 跟进。不包含移动端或托管同步服务。
+密钥安全存储（模型 API key 进系统安全存储）仍在 #2 跟进；迁移落地前设置中仍可能含密钥。不包含移动端或托管同步服务。
 
 ## 更新与卸载
 

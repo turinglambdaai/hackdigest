@@ -14,7 +14,7 @@ digested on demand.
 
 ## Start here
 
-All client features are free with your own model key; provider charges apply. Hosted translation is not open for purchase. Desktop previews for macOS, Windows and Linux on Glaze. Native transport, packaged behavior and secret-storage parity still require release qualification.
+All client features are free with your own model key; provider charges apply. Hosted translation is not open for purchase. Desktop previews for macOS, Windows and Linux on Glaze. All three platforms run the native transport by default (HTTP stays the explicit dev adapter) and the release pipeline runs a packaged native selftest on every platform; secret-storage parity is still pending (#2).
 
 [Installation, first use, privacy, backup and recovery](docs/USER-GUIDE.md) · [简体中文](docs/USER-GUIDE.zh-CN.md)
 
@@ -88,7 +88,9 @@ live in the Racket backend.
   storage/settings layer the components talk to.
 - Frontend — React + Vite + zustand + Tailwind 4; progressively-loaded
   feeds and comment trees, light/dark. In-app it talks to the backend over
-  HTTP; plain-browser dev keeps an IndexedDB fallback.
+  the native GLZ1 message channel — no TCP port; `HACKDIGEST_TRANSPORT=http`
+  remains the explicit dev adapter, and plain-browser dev keeps an IndexedDB
+  fallback.
 - Backend — Racket: SQLite storage (kv store, translations, HN item cache —
   a translated thread is never translated twice) plus settings/library data
   files. The translation/digest pipeline (prompt building, 30-title batches,
