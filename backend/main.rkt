@@ -8,7 +8,19 @@
 ;; Run:  pnpm --filter @hackdigest/desktop build:vite   (once)
 ;;       racket backend/main.rkt
 
-(require (except-in glaze app-data-dir)  ; ours (platform.rkt) keeps the Tauri-compatible layout
+;; Explicit glaze module imports (G3 consumer curation): the legacy `glaze`
+;; facade is a compatibility shim whose deprecated re-exports are removed in
+;; 0.19.0. `app-data-dir` comes from platform.rkt, which keeps the
+;; Tauri-compatible layout.
+(require glaze/app        ; run-app, app-id
+         glaze/api        ; GET, POST, streaming-response
+         glaze/api-macros ; define-api-routes
+         glaze/browser    ; open-browser
+         glaze/events     ; make-event-bus
+         (except-in glaze/path app-data-dir) ; public-dir; app-data-dir stays ours
+         glaze/sys/main   ; single-instance?
+         glaze/types      ; GString, GInt64, GValue, glist
+         glaze/window-state ; window-state
          json
          racket/contract
          racket/file
