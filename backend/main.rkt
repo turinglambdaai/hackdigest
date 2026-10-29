@@ -444,10 +444,11 @@
         frontend-dist))
 
   (define selftest-passed? (box #f))
+  (define selftest-start-ms (and selftest? (current-inexact-milliseconds)))
   (define (smoke-mark phase)
     (when selftest?
       (eprintf "[selftest] phase=~a elapsed-ms=~a\n"
-               phase (current-inexact-milliseconds))
+               phase (- (current-inexact-milliseconds) selftest-start-ms))
       (flush-output (current-error-port))))
   (smoke-mark 'before-run-app)
   (run-app
