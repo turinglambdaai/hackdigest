@@ -390,9 +390,9 @@
   ;; packaged-native checks. CI and release smoke both pass an isolated dir.
   (define selftest? (equal? (getenv "HACKDIGEST_SELFTEST") "1"))
   (when selftest?
-    (define data-dir (getenv "HACKDIGEST_DATA_DIR"))
-    (unless (and data-dir (not (string=? data-dir "")))
-      (raise-user-error 'hackdigest-selftest "set HACKDIGEST_DATA_DIR to an isolated test directory")))
+    (let ([data-dir (getenv "HACKDIGEST_DATA_DIR")])
+      (unless (and data-dir (not (string=? data-dir "")))
+        (raise-user-error 'hackdigest-selftest "set HACKDIGEST_DATA_DIR to an isolated test directory"))))
 
   (unless (single-instance? "hackdigest")
     (displayln "[hackdigest] another instance is running; exiting")
