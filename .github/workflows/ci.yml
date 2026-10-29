@@ -38,11 +38,10 @@ jobs:
         with:
           version: stable
 
-      # Pinned to the glaze main head carrying the G4 native-host
-      # conformance matrix (green on all three OSes); flip to the next
-      # tagged release (v0.18.0) once it exists.
+      # Temporary immutable PR #85 head for cross-repository native integration.
+      # Replace with the verified Glaze merge SHA before merging this PR.
       - name: Install glaze
-        run: raco pkg install --auto --no-docs --skip-installed git+https://github.com/turinglambdaai/glaze.git#bb98ae60ad9e2e8a59bf61ee1144141f3de96f35
+        run: raco pkg install --auto --no-docs --skip-installed git+https://github.com/turlamai/glaze.git#c628564068e9e2805f8eb517451146132cae5fba
 
       # the updater verifies manifests through the crypto package (libcrypto
       # FFI bundled with the Racket distribution)
@@ -85,7 +84,7 @@ jobs:
       - name: Install pinned Glaze and crypto
         shell: bash
         run: |
-          raco pkg install --auto --no-docs --skip-installed git+https://github.com/turinglambdaai/glaze.git#bb98ae60ad9e2e8a59bf61ee1144141f3de96f35
+          raco pkg install --auto --no-docs --skip-installed git+https://github.com/turlamai/glaze.git#c628564068e9e2805f8eb517451146132cae5fba
           raco pkg install --auto --no-docs --skip-installed crypto
       - name: Install WebKitGTK for Linux
         if: runner.os == 'Linux'
