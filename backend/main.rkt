@@ -498,7 +498,7 @@
                       [(and (string? smoke-title)
                             (string-prefix? smoke-title "HD Smoke FAIL")) #f]
                       [(> (current-inexact-milliseconds) until) #f]
-                      [else (sleep 0.25) (loop)])))))
+                      [else (sleep 0.25) (loop until)])))))
          (set-box! selftest-passed? (and bridge-ok? #t))
          (eprintf
           "[selftest] transport=~a url=~a observed=~a loaded=~a origin=~a capture=~a glz1=~a title=~s\n"
