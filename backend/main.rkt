@@ -386,6 +386,14 @@
      (install-downloaded!))])
 
 (module+ main
+  ;; Never mutate a developer's real database while running synthetic
+  ;; packaged-native checks. CI and release smoke both pass an isolated dir.
+  (define selftest? (equal? (getenv "HACKDIGEST_SELFTEST") "1"))
+  (when selftest?
+    (define data-dir (getenv "HACKDIGEST_DATA_DIR"))
+    (unless (and data-dir (not (string=? data-dir "")))
+      (raise-user-error 'hackdigest-selftest "set HACKDIGEST_DATA_DIR to an isolated test directory")))
+
   (unless (single-instance? "hackdigest")
     (displayln "[hackdigest] another instance is running; exiting")
     (exit 1))
@@ -414,7 +422,6 @@
   ;; process exits 0. A missing WebView backend, a page that never
   ;; commits, or an empty capture exits non-zero; there is no browser
   ;; fallback to mask a broken packaged bridge.
-  (define selftest? (equal? (getenv "HACKDIGEST_SELFTEST") "1"))
   ;; Selftest must fail closed: an explicit HTTP override is never native
   ;; evidence, even if the app opens and captures the same frontend.
   (when (and selftest? (not (eq? transport 'native)))
