@@ -444,6 +444,12 @@
         frontend-dist))
 
   (define selftest-passed? (box #f))
+  (define (smoke-mark phase)
+    (when selftest?
+      (eprintf "[selftest] phase=~a elapsed-ms=~a\n"
+               phase (current-inexact-milliseconds))
+      (flush-output (current-error-port))))
+  (smoke-mark 'before-run-app)
   (run-app
    #:public-dir serving-dir
    #:api (if selftest? (append api (native-smoke-routes)) api)
@@ -466,6 +472,7 @@
                     [(equal? (webview-title wv) "HackDigest") #t]
                     [(> (current-inexact-milliseconds) deadline) #f]
                     [else (sleep 0.25) (loop)]))))
+         (smoke-mark 'react-title-loaded)
          ;; A real native page must use the controlled WebView origin, never
          ;; loopback HTTP. WebView2 maps the custom scheme to glaze.localhost.
          (define native-origin
@@ -486,10 +493,12 @@
                     [(> (current-inexact-milliseconds) limit) s]
                     [else (sleep 0.3) (retry limit)]))))
          (define capture-ok? (and shot (>= (file-size shot) 5000)))
+         (smoke-mark 'capture-checked)
          (define smoke-title #f)
          (define bridge-ok?
            (and loaded? origin-ok? capture-ok?
                 (begin
+                  (smoke-mark 'before-probe-navigation)
                   (webview-navigate wv (string-append native-origin "__glaze-smoke.html"))
                   (let loop ([until (+ (current-inexact-milliseconds) 30000)])
                     (set! smoke-title (webview-title wv))
@@ -499,15 +508,19 @@
                             (string-prefix? smoke-title "HD Smoke FAIL")) #f]
                       [(> (current-inexact-milliseconds) until) #f]
                       [else (sleep 0.25) (loop until)])))))
+         (smoke-mark 'probe-finished)
          (set-box! selftest-passed? (and bridge-ok? #t))
          (eprintf
           "[selftest] transport=~a url=~a observed=~a loaded=~a origin=~a capture=~a glz1=~a title=~s\n"
           transport url observed-url loaded? (and origin-ok? #t)
           (and capture-ok? #t) (and bridge-ok? #t) smoke-title)
-         (when (webview? wv) (webview-close wv)))
+         (smoke-mark 'before-webview-close)
+         (when (webview? wv) (webview-close wv))
+         (smoke-mark 'after-webview-close))
        (lambda (_wv _url) (void))))
 
   (when selftest?
+    (smoke-mark 'after-run-app)
     (delete-directory/files smoke-root)
     (exit (if (unbox selftest-passed?) 0 1))))
 
