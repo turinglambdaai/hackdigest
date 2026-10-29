@@ -3,17 +3,18 @@
 // streamChat/streamLines parse the OK/ERR line protocol, and an ERR line
 // throws the backend's message on both transports.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { apiPost, hasBackend, streamChat, streamLines } from '../src/bridge';
+import { apiGet, apiPost, hasBackend, streamChat, streamLines } from '../src/bridge';
 
 // A __glz1 double: invokes resolve with the handler's value; streams run
 // the handler (which fires onDelta per chunk) and resolve with its return
 // value — the same shape the real channel gives the bridge.
 function nativeBridge(handlers: {
-  invoke?: (path: string, args: unknown) => unknown;
+  invoke?: (path: string, args: unknown, opts?: { method?: string }) => unknown;
   stream?: (path: string, args: unknown, onDelta: (t: string) => void) => string;
 }) {
   (window as unknown as { __glz1?: unknown }).__glz1 = {
-    invoke: (path: string, args: unknown) => Promise.resolve(handlers.invoke?.(path, args)),
+    invoke: (path: string, args: unknown, opts?: { method?: string }) =>
+      Promise.resolve(handlers.invoke?.(path, args, opts)),
     invokeStream: (path: string, args: unknown, opts?: { onDelta?: (t: string) => void }) => {
       const full = handlers.stream?.(path, args, (t) => opts?.onDelta?.(t)) ?? '';
       return Promise.resolve(full);
@@ -34,6 +35,25 @@ describe('bridge: http transport', () => {
     vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true })));
     expect(await hasBackend()).toBe(true);
     expect(vi.mocked(fetch).mock.calls[0][0]).toBe('/api/health');
+  });
+
+  it('apiGet uses GET on the HTTP development adapter', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({
+      ok: true,
+      json: async () => ({ version: '0.3.1' }),
+    })));
+    expect(await apiGet<{ version: string }>('/api/health')).toEqual({ version: '0.3.1' });
+    expect(fetch).toHaveBeenCalledWith('/api/health', { method: 'GET' });
+  });
+
+  it('apiGet propagates HTTP error responses', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({
+      ok: false,
+      status: 503,
+      statusText: 'Unavailable',
+      json: async () => ({ error: 'health offline' }),
+    })));
+    await expect(apiGet('/api/health')).rejects.toThrow('health offline');
   });
 
   it('apiPost throws the backend error message', async () => {
@@ -123,6 +143,16 @@ describe('bridge: native transport', () => {
   it('hasBackend is true when __glz1 is present', async () => {
     nativeBridge({});
     expect(await hasBackend()).toBe(true);
+  });
+
+  it('apiGet invokes the native bridge with GET, not fetch', async () => {
+    const invoke = vi.fn(() => ({ version: '0.3.1' }));
+    nativeBridge({ invoke });
+    vi.stubGlobal('fetch', vi.fn());
+
+    expect(await apiGet<{ version: string }>('/api/health')).toEqual({ version: '0.3.1' });
+    expect(invoke).toHaveBeenCalledWith('/api/health', {}, { method: 'GET' });
+    expect(fetch).not.toHaveBeenCalled();
   });
 
   it('apiPost resolves the invoke value', async () => {

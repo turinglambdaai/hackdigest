@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import {
+  apiGet,
   PROVIDERS,
   TRANSLATE_TARGETS,
   langName,
@@ -56,8 +57,7 @@ export default function SettingsPage() {
   // The backend reports the real packaged version (APP_VERSION above only
   // covers plain-browser dev where no backend is up).
   useEffect(() => {
-    fetch('/api/health')
-      .then((r) => r.json())
+    apiGet<{ version: string }>('/api/health')
       .then((j) => {
         if (j && typeof j.version === 'string') setAppVersion(j.version);
       })
