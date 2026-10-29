@@ -3,7 +3,7 @@
 Hacker News, in your language — a reader built for people who don't read
 English comfortably enough to enjoy HN raw.
 
-[![CI](https://github.com/turinglambdaai/hackdigest/actions/workflows/ci.yml/badge.svg)](https://github.com/turinglambdaai/hackdigest/actions/workflows/ci.yml) [![License](https://img.shields.io/badge/license-AGPL--3.0-blue)](LICENSE)
+[![CI](https://github.com/turlamai/hackdigest/actions/workflows/ci.yml/badge.svg)](https://github.com/turlamai/hackdigest/actions/workflows/ci.yml) [![License](https://img.shields.io/badge/license-AGPL--3.0-blue)](LICENSE)
 
 **English** · [中文](README.zh-CN.md)
 
@@ -21,7 +21,7 @@ All client features are free with your own model key; provider charges apply. Ho
 ## Download
 
 Grab the latest build from
-[GitHub Releases](https://github.com/turinglambdaai/hackdigest/releases/latest) —
+[GitHub Releases](https://github.com/turlamai/hackdigest/releases/latest) —
 every asset is built from source by GitHub CI and launch-smoke-tested on all
 three platforms:
 
@@ -74,7 +74,7 @@ All client features remain free with your own model key; your provider charges a
 ## Tech stack
 
 **Glaze + React + TypeScript** — a Racket host (via
-[Glaze](https://github.com/turinglambdaai/glaze)) serves the React frontend
+[Glaze](https://github.com/turlamai/glaze)) serves the React frontend
 in the platform webview. One repo: `backend/` + `apps/desktop/` +
 `packages/core`. HackDigest is a content app — story pages, rich comment
 trees, typeset text — and for content, the web rendering engine is the best

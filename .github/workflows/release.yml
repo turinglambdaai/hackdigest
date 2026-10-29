@@ -82,7 +82,7 @@ jobs:
           distribution: full
 
       - name: Install glaze
-        run: raco pkg install --auto --no-docs --skip-installed git+https://github.com/turinglambdaai/glaze.git#bb98ae60ad9e2e8a59bf61ee1144141f3de96f35
+        run: raco pkg install --auto --no-docs --skip-installed git+https://github.com/turlamai/glaze.git#bb98ae60ad9e2e8a59bf61ee1144141f3de96f35
 
       # the updater verifies manifests through the crypto package (libcrypto
       # FFI bundled with the Racket distribution)
@@ -267,7 +267,7 @@ jobs:
           distribution: full
 
       - name: Install glaze
-        run: raco pkg install --auto --no-docs --skip-installed git+https://github.com/turinglambdaai/glaze.git#bb98ae60ad9e2e8a59bf61ee1144141f3de96f35
+        run: raco pkg install --auto --no-docs --skip-installed git+https://github.com/turlamai/glaze.git#bb98ae60ad9e2e8a59bf61ee1144141f3de96f35
 
       # the updater verifies manifests through the crypto package (libcrypto
       # FFI bundled with the Racket distribution)
@@ -405,7 +405,7 @@ jobs:
           Priority: optional
           Installed-Size: $installed_size
           Depends: libwebkit2gtk-4.1-0 | libwebkit2gtk-4.0-37, libgtk-3-0, libssl3, xdg-utils
-          Homepage: https://github.com/turinglambdaai/hackdigest
+          Homepage: https://github.com/turlamai/hackdigest
           Description: Hacker News reader with built-in translation and AI digests
            HackDigest turns Hacker News into your language: on-demand translation
            of stories and comment threads, three-layer AI digests (article TL;DR,
@@ -511,7 +511,7 @@ jobs:
           Release:        1
           Summary:        Hacker News reader with built-in translation and AI digests
           License:        AGPL-3.0
-          URL:            https://github.com/turinglambdaai/hackdigest
+          URL:            https://github.com/turlamai/hackdigest
           BuildArch:      __HD_ARCH__
           Requires:       gtk3
           Requires:       webkit2gtk4.1
@@ -708,7 +708,7 @@ jobs:
           distribution: full
 
       - name: Install glaze
-        run: raco pkg install --auto --no-docs --skip-installed git+https://github.com/turinglambdaai/glaze.git#bb98ae60ad9e2e8a59bf61ee1144141f3de96f35
+        run: raco pkg install --auto --no-docs --skip-installed git+https://github.com/turlamai/glaze.git#bb98ae60ad9e2e8a59bf61ee1144141f3de96f35
 
       # the updater verifies manifests through the crypto package (libcrypto
       # FFI bundled with the Racket distribution)
@@ -904,7 +904,7 @@ jobs:
 
       - name: Install glaze and crypto
         run: |
-          raco pkg install --auto --no-docs --skip-installed git+https://github.com/turinglambdaai/glaze.git#bb98ae60ad9e2e8a59bf61ee1144141f3de96f35 crypto
+          raco pkg install --auto --no-docs --skip-installed git+https://github.com/turlamai/glaze.git#bb98ae60ad9e2e8a59bf61ee1144141f3de96f35 crypto
 
       - uses: actions/download-artifact@v4
         with:

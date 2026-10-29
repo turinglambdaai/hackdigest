@@ -42,7 +42,7 @@ jobs:
       # conformance matrix (green on all three OSes); flip to the next
       # tagged release (v0.18.0) once it exists.
       - name: Install glaze
-        run: raco pkg install --auto --no-docs --skip-installed git+https://github.com/turinglambdaai/glaze.git#bb98ae60ad9e2e8a59bf61ee1144141f3de96f35
+        run: raco pkg install --auto --no-docs --skip-installed git+https://github.com/turlamai/glaze.git#bb98ae60ad9e2e8a59bf61ee1144141f3de96f35
 
       # the updater verifies manifests through the crypto package (libcrypto
       # FFI bundled with the Racket distribution)
