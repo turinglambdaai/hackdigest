@@ -54,22 +54,35 @@ export function hasBackend(): Promise<boolean> {
   return probe;
 }
 
+// Both the native and HTTP adapters must share the same JSON error policy.
+async function readJsonResponse<T>(res: Response): Promise<T> {
+  const json = (await res.json().catch(() => null)) as (T & { error?: string }) | null;
+  if (!res.ok) {
+    throw new Error(json?.error ?? `${res.status} ${res.statusText}`);
+  }
+  return json as T;
+}
+
+/** GET JSON via native GLZ1 or the explicit HTTP development adapter. */
+export async function apiGet<T>(path: string): Promise<T> {
+  const g = nativeBridge();
+  if (g) {
+    return (await g.invoke(path, {}, { method: 'GET' })) as T;
+  }
+  return readJsonResponse<T>(await fetch(path, { method: 'GET' }));
+}
+
 /** POST JSON to the backend; returns the parsed response or null (JSON null). */
 export async function apiPost<T>(path: string, body?: unknown): Promise<T> {
   const g = nativeBridge();
   if (g) {
     return (await g.invoke(path, body ?? {}, { method: 'POST' })) as T;
   }
-  const res = await fetch(path, {
+  return readJsonResponse<T>(await fetch(path, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body ?? {}),
-  });
-  const json = (await res.json().catch(() => null)) as (T & { error?: string }) | null;
-  if (!res.ok) {
-    throw new Error(json?.error ?? `${res.status} ${res.statusText}`);
-  }
-  return json as T;
+  }));
 }
 
 // The streaming line protocol shared by both transports. Errors cannot
