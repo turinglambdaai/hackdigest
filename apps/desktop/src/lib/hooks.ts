@@ -1,21 +1,17 @@
 // Shared hooks: external link opening, async state.
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { hasBackend } from '@hackdigest/core';
+import { apiPost, hasBackend } from '@hackdigest/core';
 
 export async function openExternal(url: string): Promise<void> {
   if (await hasBackend()) {
-    try {
-      await fetch('/api/open', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url }),
-      });
-      return;
-    } catch {
-      /* fall through to window.open */
-    }
+    // Packaged Glaze apps use native GLZ1, not a loopback /api server.
+    // Preserve backend URL policy: a rejected opener request must not
+    // bypass the Racket guard via window.open in the WebView.
+    await apiPost('/api/open', { url });
+    return;
   }
+  // Browser-only frontend development, with no Glaze backend.
   window.open(url, '_blank', 'noopener,noreferrer');
 }
 
