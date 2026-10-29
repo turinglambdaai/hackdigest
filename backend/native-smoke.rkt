@@ -18,7 +18,7 @@
 (async function () {
   function assert(ok, what) { if (!ok) throw new Error(what); }
   function result(ok, detail) {
-    const text = 'HD Smoke ' + (ok ? 'PASS' : 'FAIL') + (detail ? ': ' + detail : '');
+    const text = (ok ? 'HD Smoke PASS' : 'HD Smoke FAIL') + (detail ? ': ' + detail : '');
     document.title = text;
     document.getElementById('result').textContent = text;
   }
