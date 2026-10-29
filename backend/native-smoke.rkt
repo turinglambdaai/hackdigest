@@ -25,7 +25,11 @@
   try {
     assert(window.glaze && typeof glaze.invoke === 'function', 'missing native client');
     const hello = await glaze.hello();
-    assert(hello && hello.commands >= 2, 'GLZ1 hello');
+    assert(hello && hello.glz === 1 && Array.isArray(hello.routes) &&
+           hello.routes.some((route) => route.method === 'GET' &&
+                                        route.path === '/api/health') &&
+           hello.routes.some((route) => route.method === 'POST' &&
+                                        route.path === '/api/kv/set'), 'GLZ1 hello route manifest');
     const health = await glaze.invoke('api/health', {}, { method: 'GET' });
     assert(health && health.ok === true && typeof health.version === 'string', 'GET health');
 
