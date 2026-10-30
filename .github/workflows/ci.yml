@@ -150,6 +150,25 @@ jobs:
           $proc = Start-Process -FilePath $app -PassThru -WorkingDirectory (Resolve-Path 'dist').Path -RedirectStandardOutput $out -RedirectStandardError $err
           try {
             if (-not $proc.WaitForExit(120000)) {
+              # Keep a true nonzero failure while reporting whether the
+              # packaged launcher, child process, or native threads remain.
+              Write-Host '::group::Windows packaged process diagnostics'
+              try {
+                $live = Get-Process -Id $proc.Id -ErrorAction SilentlyContinue
+                if ($live) {
+                  Write-Host "launcher pid=$($live.Id) name=$($live.ProcessName) threads=$($live.Threads.Count) handles=$($live.HandleCount)"
+                  $live.Threads | Select-Object -First 20 Id,ThreadState,WaitReason | Format-Table | Out-String | Write-Host
+                } else {
+                  Write-Host "launcher pid=$($proc.Id) exited before process inspection"
+                }
+                Get-CimInstance Win32_Process |
+                  Where-Object { $_.ParentProcessId -eq $proc.Id } |
+                  Select-Object ProcessId,ParentProcessId,Name |
+                  Format-Table | Out-String | Write-Host
+              } catch {
+                Write-Host "process diagnostics unavailable: $_"
+              }
+              Write-Host '::endgroup::'
               Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue
               throw 'packaged native selftest timed out'
             }
