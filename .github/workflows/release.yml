@@ -82,7 +82,7 @@ jobs:
           distribution: full
 
       - name: Install glaze
-        run: raco pkg install --auto --no-docs --skip-installed git+https://github.com/turlamai/glaze.git#c628564068e9e2805f8eb517451146132cae5fba
+        run: raco pkg install --auto --no-docs --skip-installed git+https://github.com/turlamai/glaze.git#d639908b2e016f7fdc0cfeac7f0b450cc372bc72
 
       # the updater verifies manifests through the crypto package (libcrypto
       # FFI bundled with the Racket distribution)
@@ -267,7 +267,7 @@ jobs:
           distribution: full
 
       - name: Install glaze
-        run: raco pkg install --auto --no-docs --skip-installed git+https://github.com/turlamai/glaze.git#c628564068e9e2805f8eb517451146132cae5fba
+        run: raco pkg install --auto --no-docs --skip-installed git+https://github.com/turlamai/glaze.git#d639908b2e016f7fdc0cfeac7f0b450cc372bc72
 
       # the updater verifies manifests through the crypto package (libcrypto
       # FFI bundled with the Racket distribution)
@@ -405,7 +405,7 @@ jobs:
           Priority: optional
           Installed-Size: $installed_size
           Depends: libwebkit2gtk-4.1-0 | libwebkit2gtk-4.0-37, libgtk-3-0, libssl3, xdg-utils
-          Homepage: https://github.com/turinglambdaai/hackdigest
+          Homepage: https://github.com/turlamai/hackdigest
           Description: Hacker News reader with built-in translation and AI digests
            HackDigest turns Hacker News into your language: on-demand translation
            of stories and comment threads, three-layer AI digests (article TL;DR,
@@ -511,7 +511,7 @@ jobs:
           Release:        1
           Summary:        Hacker News reader with built-in translation and AI digests
           License:        AGPL-3.0
-          URL:            https://github.com/turinglambdaai/hackdigest
+          URL:            https://github.com/turlamai/hackdigest
           BuildArch:      __HD_ARCH__
           Requires:       gtk3
           Requires:       webkit2gtk4.1
@@ -708,7 +708,7 @@ jobs:
           distribution: full
 
       - name: Install glaze
-        run: raco pkg install --auto --no-docs --skip-installed git+https://github.com/turlamai/glaze.git#c628564068e9e2805f8eb517451146132cae5fba
+        run: raco pkg install --auto --no-docs --skip-installed git+https://github.com/turlamai/glaze.git#d639908b2e016f7fdc0cfeac7f0b450cc372bc72
 
       # the updater verifies manifests through the crypto package (libcrypto
       # FFI bundled with the Racket distribution)
@@ -904,7 +904,7 @@ jobs:
 
       - name: Install glaze and crypto
         run: |
-          raco pkg install --auto --no-docs --skip-installed git+https://github.com/turlamai/glaze.git#c628564068e9e2805f8eb517451146132cae5fba crypto
+          raco pkg install --auto --no-docs --skip-installed git+https://github.com/turlamai/glaze.git#d639908b2e016f7fdc0cfeac7f0b450cc372bc72 crypto
 
       - uses: actions/download-artifact@v4
         with:
@@ -952,11 +952,11 @@ jobs:
             on {print}
           ' CHANGELOG.md > /tmp/notes.md
           test -s /tmp/notes.md || { echo "::error::empty release notes — CHANGELOG.md has no '## ${VERSION}' section"; exit 1; }
-          if gh release view "${{ github.ref_name }}" -R turinglambdaai/hackdigest >/dev/null 2>&1; then
-            gh release upload "${{ github.ref_name }}" dist/* --clobber -R turinglambdaai/hackdigest
+          if gh release view "${{ github.ref_name }}" -R turlamai/hackdigest >/dev/null 2>&1; then
+            gh release upload "${{ github.ref_name }}" dist/* --clobber -R turlamai/hackdigest
           else
             gh release create "${{ github.ref_name }}" dist/* \
-              -R turinglambdaai/hackdigest \
+              -R turlamai/hackdigest \
               --title "HackDigest ${{ github.ref_name }}" \
               --notes-file /tmp/notes.md
           fi
@@ -984,4 +984,4 @@ jobs:
           cp "dist/hackdigest-${VERSION}-linux-arm64.deb" stable-alias/hackdigest-linux-arm64.deb
           cp "dist/hackdigest-${VERSION}-linux-x64.AppImage" stable-alias/hackdigest-linux-x64.AppImage
           cp "dist/hackdigest-${VERSION}-linux-arm64.AppImage" stable-alias/hackdigest-linux-arm64.AppImage
-          gh release upload "${{ github.ref_name }}" stable-alias/* --clobber -R turinglambdaai/hackdigest
+          gh release upload "${{ github.ref_name }}" stable-alias/* --clobber -R turlamai/hackdigest

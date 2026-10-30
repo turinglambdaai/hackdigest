@@ -12,7 +12,7 @@ All client features are free with your own model key; provider charges apply. Ho
 
 Desktop previews for macOS, Windows and Linux on Glaze. All three platforms run the native transport by default — HTTP is the explicit dev adapter (`HACKDIGEST_TRANSPORT=http`) — and release CI packaged-native selftests every platform. Secret-storage parity is still pending (#2).
 
-Use [official Releases](https://github.com/turinglambdaai/hackdigest/releases), select an explicitly listed OS/architecture asset, read its release notes and check supplied checksums. An absent asset/platform is not a delivery promise. Preview builds may lack publisher signing or notarization; do not disable system-wide security protections to install them.
+Use [official Releases](https://github.com/turlamai/hackdigest/releases), select an explicitly listed OS/architecture asset, read its release notes and check supplied checksums. An absent asset/platform is not a delivery promise. Preview builds may lack publisher signing or notarization; do not disable system-wide security protections to install them.
 
 ## Your first successful session
 
@@ -38,7 +38,7 @@ Back up data and read the destination release notes first. An in-app update chec
 
 ## Get help
 
-Report problems in [GitHub Issues](https://github.com/turinglambdaai/hackdigest/issues), in English or Chinese. Include the version, OS/architecture, installation channel, steps, expected result and actual result. Reproduce with synthetic input first; do not attach keys, credentials, databases, private source documents or complete logs. Public support has no guaranteed response time.
+Report problems in [GitHub Issues](https://github.com/turlamai/hackdigest/issues), in English or Chinese. Include the version, OS/architecture, installation channel, steps, expected result and actual result. Reproduce with synthetic input first; do not attach keys, credentials, databases, private source documents or complete logs. Public support has no guaranteed response time.
 
 ## Further reading
 

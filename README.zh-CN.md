@@ -2,7 +2,7 @@
 
 把 Hacker News 读成中文 —— 为「看得懂英文、但读不痛快」的开发者做的 HN 阅读器。
 
-[![CI](https://github.com/turinglambdaai/hackdigest/actions/workflows/ci.yml/badge.svg)](https://github.com/turinglambdaai/hackdigest/actions/workflows/ci.yml) [![License](https://img.shields.io/badge/license-AGPL--3.0-blue)](LICENSE)
+[![CI](https://github.com/turlamai/hackdigest/actions/workflows/ci.yml/badge.svg)](https://github.com/turlamai/hackdigest/actions/workflows/ci.yml) [![License](https://img.shields.io/badge/license-AGPL--3.0-blue)](LICENSE)
 
 [English](README.md) · **中文**
 
@@ -16,7 +16,7 @@ Hacker News 大概是互联网上最好的技术首页 —— 但对数以百万
 
 ## 下载
 
-到 [GitHub Releases](https://github.com/turinglambdaai/hackdigest/releases/latest) 取最新版本 —— 所有产物由 GitHub CI 从源码构建，并在三平台上通过打包原生自检（生产 transport）与 HTTP 适配器冒烟验证：
+到 [GitHub Releases](https://github.com/turlamai/hackdigest/releases/latest) 取最新版本 —— 所有产物由 GitHub CI 从源码构建，并在三平台上通过打包原生自检（生产 transport）与 HTTP 适配器冒烟验证：
 
 | 平台 | 产物 |
 |---|---|
@@ -48,7 +48,7 @@ HN 老用户的肌肉记忆全部保留：**j/k** 上下移动选中，**Enter/o
 
 ## 技术栈
 
-**Glaze（Racket 后端）+ React + TypeScript**，单仓库，`backend/` + `apps/desktop/` + `packages/core`（HackDigest 是内容型应用：文章页、富文本评论树、排版，而内容渲染，web 引擎就是最好的文本引擎；应用壳、存储、LLM 代理与更新检查住在 [Glaze](https://github.com/turinglambdaai/glaze) 驱动的 Racket 后端里）。
+**Glaze（Racket 后端）+ React + TypeScript**，单仓库，`backend/` + `apps/desktop/` + `packages/core`（HackDigest 是内容型应用：文章页、富文本评论树、排版，而内容渲染，web 引擎就是最好的文本引擎；应用壳、存储、LLM 代理与更新检查住在 [Glaze](https://github.com/turlamai/glaze) 驱动的 Racket 后端里）。
 
 - `packages/core` —— 纯 TypeScript，全端复用：HN API 客户端（官方 Firebase API + Algolia 搜索）、任意 OpenAI 兼容端点的 BYOK 预置（GLM、DeepSeek、通义、Kimi、OpenAI、Claude……，国内用户可直连国产 API），以及组件依赖的存储/设置层。
 - 前端 —— React + Vite + zustand + Tailwind 4，渐进加载的评论树与信息流，深浅色；应用内经原生 GLZ1 消息通道与后端通信（不走 TCP 端口），`HACKDIGEST_TRANSPORT=http` 保留为显式开发适配器，纯浏览器 dev 保留 IndexedDB 兜底。
