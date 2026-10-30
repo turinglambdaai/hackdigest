@@ -527,7 +527,13 @@
 
   (when selftest?
     (smoke-mark 'after-run-app)
+    ;; Isolate any Windows shutdown stall: a passed GLZ1 probe must not be
+    ;; mistaken for a successful process exit. Keep cleanup and exit distinct
+    ;; in the CI logs to show which step needs the platform fix.
+    (smoke-mark 'before-smoke-cleanup)
     (delete-directory/files smoke-root)
+    (smoke-mark 'after-smoke-cleanup)
+    (smoke-mark 'before-process-exit)
     (exit (if (unbox selftest-passed?) 0 1))))
 
 (provide api bus)
