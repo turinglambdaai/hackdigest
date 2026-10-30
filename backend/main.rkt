@@ -517,7 +517,12 @@
           (and capture-ok? #t) (and bridge-ok? #t) smoke-title)
          (smoke-mark 'before-webview-close)
          (when (webview? wv) (webview-close wv))
-         (smoke-mark 'after-webview-close))
+         (smoke-mark 'after-webview-close)
+         ;; A packaged smoke must exit even if a native host does not send
+         ;; the last-window callback after an explicit close. run-app supports
+         ;; app-quit! during #:on-ready; it posts the exit semaphore once.
+         (app-quit!)
+         (smoke-mark 'after-app-quit))
        (lambda (_wv _url) (void))))
 
   (when selftest?
