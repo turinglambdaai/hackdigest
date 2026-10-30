@@ -536,11 +536,11 @@
     ;; Keep the real exit handler, but mark entry into it: this separates
     ;; Racket exit dispatch from Windows native/process finalization. A
     ;; trapped shutdown must remain a CI failure, never a forced green exit.
-    (define original-exit-handler (exit-handler))
-    (exit-handler
-     (lambda (status)
-       (smoke-mark 'exit-handler-enter)
-       (original-exit-handler status)))
+    (let ([original-exit-handler (exit-handler)])
+      (exit-handler
+       (lambda (status)
+         (smoke-mark 'exit-handler-enter)
+         (original-exit-handler status))))
     (smoke-mark 'before-process-exit)
     (exit (if (unbox selftest-passed?) 0 1))))
 
