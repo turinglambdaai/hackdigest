@@ -120,5 +120,5 @@ hackdigest/
 ## License & business model
 
 AGPL-3.0 — the client is open source, forever. Hosted translation, digest
-compute are the planned hosted subscription. Sync is not included in the launch offer. Competitors are welcome to read the code; users are welcome to
+compute are the planned hosted subscription. Sync is not included in the launch offer. The source is available for review; users are welcome to
 self-host their own keys.
