@@ -36,6 +36,16 @@ jobs:
           test "$TAG" = "$ROOT_VERSION" || { echo "::error::tag $TAG != package.json $ROOT_VERSION"; exit 1; }
           test "$TAG" = "$BACKEND_VERSION" || { echo "::error::tag $TAG != backend app-version $BACKEND_VERSION"; exit 1; }
           grep -q "^## $TAG" CHANGELOG.md || { echo "::error::CHANGELOG.md has no '## $TAG' section"; exit 1; }
+      - name: Require Ed25519 update signing secret before packaging
+        if: github.event_name == 'push'
+        shell: bash
+        env:
+          UPDATE_ED25519_PRIVATE_KEY: ${{ secrets.UPDATE_ED25519_PRIVATE_KEY }}
+        run: |
+          if [[ -z "${UPDATE_ED25519_PRIVATE_KEY:-}" ]]; then
+            echo "::error::UPDATE_ED25519_PRIVATE_KEY missing; refusing unsigned release before expensive builds"
+            exit 1
+          fi
 
   macos:
     name: macOS package (${{ matrix.arch }})
@@ -917,23 +927,26 @@ jobs:
           find dist -mindepth 2 -type f -exec mv {} dist/ \;
           find dist -mindepth 1 -maxdepth 1 -type d -exec rm -rf {} +
           ls -la dist/
-      - name: Sign the update feed (update-manifest.json)
+      - name: Sign and require trusted update feed (update-manifest.json)
         env:
           UPDATE_ED25519_PRIVATE_KEY: ${{ secrets.UPDATE_ED25519_PRIVATE_KEY }}
+        shell: bash
         run: |
           set -euo pipefail
-          case "$GITHUB_REF_NAME" in
-            v*)
-              if [[ -n "${UPDATE_ED25519_PRIVATE_KEY:-}" ]]; then
-                KEY_PEM="$RUNNER_TEMP/update-signing-key.pem"
-                printf '%s\n' "$UPDATE_ED25519_PRIVATE_KEY" > "$KEY_PEM"
-                scripts/make-update-manifest.sh "$GITHUB_REF_NAME" dist "$KEY_PEM"
-              else
-                echo "::warning::UPDATE_ED25519_PRIVATE_KEY not set — release ships without an update manifest (clients fall back to release-page updates)"
-              fi
-              ;;
-            *) echo "non-tag ref $GITHUB_REF_NAME: skipping update feed signing" ;;
-          esac
+          [[ "$GITHUB_REF_NAME" == v* ]] || { echo "::error::release publishing requires a version tag"; exit 1; }
+          [[ -n "${UPDATE_ED25519_PRIVATE_KEY:-}" ]] || {
+            echo "::error::UPDATE_ED25519_PRIVATE_KEY missing; refusing unsigned release"
+            exit 1
+          }
+          umask 077
+          KEY_PEM="$RUNNER_TEMP/update-signing-key.pem"
+          trap 'rm -f "$KEY_PEM"' EXIT
+          printf '%s\n' "$UPDATE_ED25519_PRIVATE_KEY" > "$KEY_PEM"
+          scripts/make-update-manifest.sh "$GITHUB_REF_NAME" dist "$KEY_PEM"
+          test -s dist/update-manifest.json || {
+            echo "::error::Signed update manifest missing; refusing to publish"
+            exit 1
+          }
       - name: Ensure SHA256SUMS
         run: |
           cd dist

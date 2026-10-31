@@ -27,6 +27,9 @@ jobs:
       - name: Unit tests (core)
         run: pnpm test
 
+      - name: Release signing contract (offline)
+        run: bash scripts/check-release-signing-contract.sh
+
       - name: Type-check
         run: pnpm check
 
