@@ -941,7 +941,7 @@ jobs:
           umask 077
           KEY_PEM="$RUNNER_TEMP/update-signing-key.pem"
           trap 'rm -f "$KEY_PEM"' EXIT
-          printf '%s\\n' "$UPDATE_ED25519_PRIVATE_KEY" > "$KEY_PEM"
+          printf '%s\n' "$UPDATE_ED25519_PRIVATE_KEY" > "$KEY_PEM"
           scripts/make-update-manifest.sh "$GITHUB_REF_NAME" dist "$KEY_PEM"
           test -s dist/update-manifest.json || {
             echo "::error::Signed update manifest missing; refusing to publish"
